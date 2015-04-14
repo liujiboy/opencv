@@ -1,0 +1,2 @@
+/Users/liuji/Projects/python/ComputerVision/data/alcatraz1.jpg
+/Users/liuji/Projects/python/ComputerVision/data/alcatraz2.jpg
