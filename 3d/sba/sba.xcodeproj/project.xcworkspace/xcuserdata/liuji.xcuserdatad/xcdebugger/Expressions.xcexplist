@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<VariablesViewState
+   version = "1.0">
+   <ContextStates>
+      <ContextState
+         contextName = "readCameraParams:readparams.c">
+         <PersistentStrings>
+            <PersistentString
+               value = "params[1]">
+            </PersistentString>
+            <PersistentString
+               value = "params[2]">
+            </PersistentString>
+            <PersistentString
+               value = "params[0]">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
+         contextName = "quat2vec:eucsbademo.c">
+         <PersistentStrings>
+            <PersistentString
+               value = "inp[0]">
+            </PersistentString>
+            <PersistentString
+               value = "inp[1]">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
+         contextName = "sba_driver:eucsbademo.c">
+         <PersistentStrings>
+            <PersistentString
+               value = "motstruct[2]">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+   </ContextStates>
+</VariablesViewState>

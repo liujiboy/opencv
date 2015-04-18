@@ -14,10 +14,10 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "5EF5FC371ADD006F00BCB423"
-               BuildableName = "sba"
-               BlueprintName = "sba"
-               ReferencedContainer = "container:sba.xcodeproj">
+               BlueprintIdentifier = "5EF5FC631ADE441300BCB423"
+               BuildableName = "sbademo"
+               BlueprintName = "sbademo"
+               ReferencedContainer = "container:sbademo.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -32,10 +32,10 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "5EF5FC371ADD006F00BCB423"
-            BuildableName = "sba"
-            BlueprintName = "sba"
-            ReferencedContainer = "container:sba.xcodeproj">
+            BlueprintIdentifier = "5EF5FC631ADE441300BCB423"
+            BuildableName = "sbademo"
+            BlueprintName = "sbademo"
+            ReferencedContainer = "container:sbademo.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
    </TestAction>
@@ -52,38 +52,12 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "5EF5FC371ADD006F00BCB423"
-            BuildableName = "sba"
-            BlueprintName = "sba"
-            ReferencedContainer = "container:sba.xcodeproj">
+            BlueprintIdentifier = "5EF5FC631ADE441300BCB423"
+            BuildableName = "sbademo"
+            BlueprintName = "sbademo"
+            ReferencedContainer = "container:sbademo.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
-      <CommandLineArguments>
-         <CommandLineArgument
-            argument = "/Users/liuji/Documents/workspace/SFM/opencv_sfm/cams.txt"
-            isEnabled = "YES">
-         </CommandLineArgument>
-         <CommandLineArgument
-            argument = "/Users/liuji/Documents/workspace/SFM/opencv_sfm/pts.txt"
-            isEnabled = "YES">
-         </CommandLineArgument>
-         <CommandLineArgument
-            argument = "/Users/liuji/Documents/workspace/SFM/opencv_sfm/calib.txt"
-            isEnabled = "YES">
-         </CommandLineArgument>
-         <CommandLineArgument
-            argument = "/Users/liuji/Documents/workspace/SFM/opencv_sfm/newcams.txt"
-            isEnabled = "YES">
-         </CommandLineArgument>
-         <CommandLineArgument
-            argument = "/Users/liuji/Documents/workspace/SFM/opencv_sfm/newpts.txt"
-            isEnabled = "YES">
-         </CommandLineArgument>
-         <CommandLineArgument
-            argument = "1"
-            isEnabled = "YES">
-         </CommandLineArgument>
-      </CommandLineArguments>
       <AdditionalOptions>
       </AdditionalOptions>
    </LaunchAction>
@@ -97,10 +71,10 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "5EF5FC371ADD006F00BCB423"
-            BuildableName = "sba"
-            BlueprintName = "sba"
-            ReferencedContainer = "container:sba.xcodeproj">
+            BlueprintIdentifier = "5EF5FC631ADE441300BCB423"
+            BuildableName = "sbademo"
+            BlueprintName = "sbademo"
+            ReferencedContainer = "container:sbademo.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

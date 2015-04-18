@@ -393,9 +393,6 @@ register int i, ii, jj, k;
  * Also, it loads the projections of 3D points across images and optionally their covariances.
  * The routine dynamically allocates the required amount of memory (last 4 arguments).
  * If no covariances are supplied, *covimgpts is set to NULL
- * camsfname、ptsfname、cnp、pnp、mnp、infilter、filecnp是输入
- * ncams、n3Dpts、n2Dprojs、motstruct、initrot、imgpts、convimgpts、vmask是输出
- * motstruct、initrot、imgpts、convimgpts、vmask在此函数中分配内存
  */
 void readInitialSBAEstimate(char *camsfname, char *ptsfname, int cnp, int pnp, int mnp,
                             void (*infilter)(double *pin, int nin, double *pout, int nout), int filecnp,
@@ -417,26 +414,23 @@ int havecov;
 
   *ncams=findNcameras(fpc);
   readNpointsAndNprojections(fpp, n3Dpts, pnp, n2Dprojs, mnp, &havecov);
-  //mostruct的包含所有相机参数+三维点
+
   *motstruct=(double *)malloc((*ncams*cnp + *n3Dpts*pnp)*sizeof(double));
   if(*motstruct==NULL){
     fprintf(stderr, "memory allocation for 'motstruct' failed in readInitialSBAEstimate()\n");
     exit(1);
   }
-  //相机旋转用4元数表示，则n个相机需要n*4的空间
   *initrot=(double *)malloc((*ncams*FULLQUATSZ)*sizeof(double)); // Note: this assumes quaternions for rotations!
   if(*initrot==NULL){
     fprintf(stderr, "memory allocation for 'initrot' failed in readInitialSBAEstimate()\n");
     exit(1);
   }
-  //imgpts所有二维点
   *imgpts=(double *)malloc(*n2Dprojs*mnp*sizeof(double));
   if(*imgpts==NULL){
     fprintf(stderr, "memory allocation for 'imgpts' failed in readInitialSBAEstimate()\n");
     exit(1);
   }
   if(havecov){
-    //如果有协方差信息，covimgpts存储二维点的协方差
     *covimgpts=(double *)malloc(*n2Dprojs*mnp*mnp*sizeof(double));
     if(*covimgpts==NULL){
       fprintf(stderr, "memory allocation for 'covimgpts' failed in readInitialSBAEstimate()\n");
@@ -445,8 +439,6 @@ int havecov;
   }
   else
     *covimgpts=NULL;
-  //vmask表示某个三维点是否在某个相机中出现
-  //vmask[ptno*ncams+frameno]表示ptno对应的点在frameno相机下是否出现
   *vmask=(char *)malloc(*n3Dpts * *ncams * sizeof(char));
   if(*vmask==NULL){
     fprintf(stderr, "memory allocation for 'vmask' failed in readInitialSBAEstimate()\n");
@@ -526,7 +518,7 @@ void printSBAMotionData(FILE *fp, double *motstruct, int ncams, int cnp,
 {
 register int i;
 
-//fputs("Motion parameters:\n", fp);
+  fputs("Motion parameters:\n", fp);
   if(!outfilter || outcnp<=0){ // no output filtering
     for(i=0; i<ncams*cnp; ++i){
       fprintf(fp, "%.10e ", motstruct[i]);
@@ -557,7 +549,7 @@ void printSBAStructureData(FILE *fp, double *motstruct, int ncams, int n3Dpts, i
 register int i;
 
   motstruct+=ncams*cnp;
-  //fputs("\n\nStructure parameters:\n", fp);
+  fputs("\n\nStructure parameters:\n", fp);
   for(i=0; i<n3Dpts*pnp; ++i){
     fprintf(fp, "%.10e ", motstruct[i]);
     if((i+1)%pnp==0) fputc('\n', fp);
@@ -577,7 +569,7 @@ int nframes;
   printSBAMotionData(fp, motstruct, ncams, cnp, outfilter, outcnp);
   motstruct+=ncams*cnp;
 
-  //fputs("\n\nStructure parameters and image projections:\n", fp);
+  fputs("\n\nStructure parameters and image projections:\n", fp);
   for(i=k=0; i<n3Dpts; ++i){
     for(j=0; j<pnp; ++j)
       fprintf(fp, "%.10e ", motstruct[i*pnp+j]);

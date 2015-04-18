@@ -27,6 +27,6 @@ extern void calcDistImgProjJacS(double a[5], double kc[5], double qr0[4], double
 extern void sba_driver(char *camsfname, char *ptsfname, char *calibfname, int cnp, int pnp, int mnp,
                        void (*caminfilter)(double *pin, int nin, double *pout, int nout),
                        void (*camoutfilter)(double *pin, int nin, double *pout, int nout),
-                       int cnfp, char *refcamsfname, char *refptsfname);
+                       int cnfp, char *refcamsfname, char *refptsfname,int nconstframes);
 
 #endif /* _SBA_DEMO_H_ */

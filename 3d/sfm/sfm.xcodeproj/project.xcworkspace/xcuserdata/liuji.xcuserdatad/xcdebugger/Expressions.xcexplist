@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<VariablesViewState
+   version = "1.0">
+   <ContextStates>
+      <ContextState
+         contextName = "rotmat2quat(double*, double*):opencv_sba.cpp">
+      </ContextState>
+      <ContextState
+         contextName = "opencv_twoview_sba(cv::Mat_&lt;double&gt; const&amp;, cv::Mat_&lt;double&gt; const&amp;, cv::Mat_&lt;double&gt; const&amp;, cv::Mat_&lt;double&gt; const&amp;, cv::Mat_&lt;double&gt; const&amp;, cv::Mat_&lt;double&gt; const&amp;, cv::Mat_&lt;double&gt;&amp;, cv::Mat_&lt;double&gt;&amp;, cv::Mat_&lt;double&gt;&amp;):opencv_sba.cpp">
+         <PersistentStrings>
+            <PersistentString
+               value = "*motstruct">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
+         contextName = "sba_motstr_levmar_x:sba_levmar.c">
+         <PersistentStrings>
+            <PersistentString
+               value = "stop!=7">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
+         contextName = "sba_print_inf:sba_levmar.c">
+         <PersistentStrings>
+            <PersistentString
+               value = "hx[0]">
+            </PersistentString>
+            <PersistentString
+               value = "nnz">
+            </PersistentString>
+            <PersistentString
+               value = "phxij[k]">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
+         contextName = "quatMultFast(double*, double*, double*):opencv_sba.cpp">
+         <PersistentStrings>
+            <PersistentString
+               value = "q1[0]">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
+         contextName = "img_projsRTS_x(double*, sba_crsm*, int*, int*, double*, void*):opencv_sba.cpp">
+         <PersistentStrings>
+            <PersistentString
+               value = "pqr[2]">
+            </PersistentString>
+            <PersistentString
+               value = "pqr[0]">
+            </PersistentString>
+            <PersistentString
+               value = "Kparms[3]">
+            </PersistentString>
+            <PersistentString
+               value = "pqr[4]">
+            </PersistentString>
+            <PersistentString
+               value = "pqr[3]">
+            </PersistentString>
+            <PersistentString
+               value = "pqr[1]">
+            </PersistentString>
+            <PersistentString
+               value = "lrot[0]">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+   </ContextStates>
+</VariablesViewState>

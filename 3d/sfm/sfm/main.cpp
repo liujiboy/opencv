@@ -11,6 +11,7 @@
 #include <iostream>
 #include <vector>
 #include <fstream>
+#include "opencv_sba.h"
 using namespace std;
 using namespace cv;
 void loadImages(vector<Mat>&images,const char* fileName)
@@ -211,6 +212,7 @@ void triangulate(const Mat_<double>&points1,const Mat_<double>&points2,const Mat
  }
 Mat_<double> trianglulateAndFindCameraMatrix(const Mat_<double>&points1,const Mat_<double>&points2,const Mat&K,const Mat&P1,const Mat&F,Mat&P2)
 {
+
     Mat_<double> E=K.t()*F*K;
    // E=E/E(2,2);
     //cout<<E<<endl;
@@ -261,7 +263,7 @@ Mat_<double> trianglulateAndFindCameraMatrix(const Mat_<double>&points1,const Ma
     P2Vector[bestIndex].copyTo(P2);
     return points3dVector[bestIndex];
 }
-Scalar reprojectError(const Mat_<double> points2d,const Mat& K,const Mat&P,const Mat_<double> points3d)
+Scalar reprojectError(const Mat_<double>& points2d,const Mat& K,const Mat&P,const Mat_<double> points3d)
 {
     vector<double> errors;
     //cout<<P<<endl;
@@ -282,7 +284,26 @@ Scalar reprojectError(const Mat_<double> points2d,const Mat& K,const Mat&P,const
     }
     return mean(errors);
 }
+void plotCircle( Mat&img,const Mat_<double>&points,const Scalar &color,int radius=3,int thickness=-1, int lineType=8, int shift=0)
+{
+
+    for(int i=0;i<points.cols;i++)
+    {
+        Point2d center;
+        center.x=points(0,i)/points(2,i);
+        center.y=points(1,i)/points(2,i);
+        circle(img, center, radius, color,thickness);
+    }
+}
+void showImage(const string&name,const Mat&img,int flags = WINDOW_NORMAL)
+{
+    namedWindow(name,flags);
+    imshow(name, img);
+}
 int main(int argc, const char * argv[]) {
+    Mat a(3,3,CV_64F);
+    Mat b(3,3,CV_64F);
+    cout<<a*b<<endl;
     SIFT sift;
     vector<Mat> images;
     vector<vector<KeyPoint> > keypointsVector;
@@ -295,7 +316,7 @@ int main(int argc, const char * argv[]) {
     vector<DMatch> matches01;
     Mat F01;
     F01=findMatchesByFundamentalMat(keypointsVector[0],keypointsVector[1],descriptorVector[0],descriptorVector[1],matches01);
-    cout<<F01<<endl;
+    //cout<<F01<<endl;
     Mat_<double>points0,points1;
     getMatchPoints(keypointsVector[0], keypointsVector[1], matches01, points0, points1);
         cout<<"对图像0和图像1的匹配点进行三角化----------------"<<endl;
@@ -307,17 +328,40 @@ int main(int argc, const char * argv[]) {
     Mat_<double> points=trianglulateAndFindCameraMatrix(points0, points1, K, P1, F01, P2);
     cout<<"计算图像0和图像1三角化的误差----------------"<<endl;
     cout<<reprojectError(points0,K,P1,points)<<endl;
-    cout<<reprojectError(points1,K,P2,points);
+    cout<<reprojectError(points1,K,P2,points)<<endl;
+  
+
+    /*
+    saveMat(points0, "/Users/liuji/Documents/workspace/SFM/x1.txt");
+    saveMat(points1, "/Users/liuji/Documents/workspace/SFM/x2.txt");
+    saveMat(P1, "/Users/liuji/Documents/workspace/SFM/P1.txt");
+    saveMat(P2, "/Users/liuji/Documents/workspace/SFM/P2.txt");
+    saveMat(points, "/Users/liuji/Documents/workspace/SFM/X.txt");*/
+    Mat_<double> new_P1;
+    Mat_<double> new_P2;
+    Mat_<double> new_points;
+    opencv_twoview_sba_struct(K,P1,P2,points,points0,points1,new_P1,new_P2,new_points,250,10);
+    cout<<reprojectError(points0,K,new_P1,new_points)<<endl;
+    cout<<reprojectError(points1,K,new_P2,new_points)<<endl;
+    Mat outImg1=images[0].clone();
+    Mat outImg2=images[1].clone();
+    plotCircle(outImg1, points0, Scalar(255,0,0));
+    plotCircle(outImg1, K*new_P1*new_points, Scalar(0,0,255));
+    plotCircle(outImg2, points1, Scalar(255,0,0));
+    plotCircle(outImg2, K*new_P2*new_points, Scalar(0,0,255));
+    showImage("outImg1", outImg1);
+    showImage("outImg2", outImg1);
+    waitKey();
     /*ofstream out1("/Users/liuji/points1.txt");
     out1<<cv::format(points1, "csv");
     out1.close();
     ofstream out2("/Users/liuji/points1_pro.txt");
     out2<<cv::format(K*P1*points, "csv");
     out2.close();*/
-    saveMat(points0, "/Users/liuji/Documents/workspace/SFM/ch5/x1.txt");
+    /*saveMat(points0, "/Users/liuji/Documents/workspace/SFM/ch5/x1.txt");
     saveMat(K*P1*points, "/Users/liuji/Documents/workspace/SFM/ch5/x1p.txt");
     saveMat(points1, "/Users/liuji/Documents/workspace/SFM/ch5/x2.txt");
     saveMat(K*P2*points, "/Users/liuji/Documents/workspace/SFM/ch5/x2p.txt");
-    saveMat(points, "/Users/liuji/Documents/workspace/SFM/ch5/X.txt");
+    saveMat(points, "/Users/liuji/Documents/workspace/SFM/ch5/X.txt");*/
     return 0;
 }
