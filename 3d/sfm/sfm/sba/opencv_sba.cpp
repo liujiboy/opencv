@@ -366,7 +366,7 @@ void quat2cammat(double*r,double*t,Mat_<double>&p)
     
 }
 
-void opencv_twoview_sba(const Mat_<double>&k,const Mat_<double>&p1,const Mat_<double>&p2,const Mat_<double>&points,const Mat_<double>&points1,const Mat_<double>&points2,Mat_<double>&new_p1,Mat_<double>&new_p2,Mat_<double>&new_points,int maxiter,int verbose)
+void opencv_twoview_sba(const Mat_<double>&k,const Mat_<double>&p1,const Mat_<double>&p2,const Mat_<double>&points,const Mat_<double>&points1,const Mat_<double>&points2,Mat_<double>&new_p1,Mat_<double>&new_p2,Mat_<double>&new_points,int nconstpts3D,int nconstframes,int maxiter,int verbose)
 {
     struct globs_ globs;
     double ical[5]={k(0,0),k(0,2),k(1,2),k(1,1)/k(0,0),0};//f cx cy ar s;
@@ -375,9 +375,7 @@ void opencv_twoview_sba(const Mat_<double>&k,const Mat_<double>&p1,const Mat_<do
     int pnp=3;  //三维点的坐标数
     int mnp=2;  //二维点的坐标数
     int numpts3D=points.cols;   //三维点的数量
-    int nconstpts3D=0;  //从第几个三维点开始计算
     int nframes=2;  //相机的数量
-    int nconstframes=1; //从第几个相机开始计算，此处保持第0号相机固定，从第1号相机开始计算
     int numprojs=numpts3D*nframes; //在所有相机下，三维点共计有多少个二维投影
     //vmask[i,j]表示第i个点在第j个镜头下是否可见，此处填充为全1，因为点在两个镜头下均可见
     char *vmask=new char[numpts3D*nframes];
@@ -472,7 +470,7 @@ void opencv_twoview_sba(const Mat_<double>&k,const Mat_<double>&p1,const Mat_<do
                 v[2]=-prd[3];
             }
         }
-        printSBAData(stdout, motstruct, cnp, pnp, mnp, vec2quat, cnp+1, nframes, numpts3D, imgpts, numprojs, vmask);
+        //printSBAData(stdout, motstruct, cnp, pnp, mnp, vec2quat, cnp+1, nframes, numpts3D, imgpts, numprojs, vmask);
 
         new_p1.create(3, 4);
         new_p2.create(3,4);
@@ -483,7 +481,6 @@ void opencv_twoview_sba(const Mat_<double>&k,const Mat_<double>&p1,const Mat_<do
         std::copy(motstruct+9, motstruct+12, t2);
         quat2cammat(r1, t1, new_p1);
         quat2cammat(r2, t2, new_p2);
-        std::cout<<new_p2<<std::endl;
         int i=0;
         for (double *p=motstruct+12; p!=motstruct+motstruct_size; p+=3) {
             new_points(0,i)=*p;
@@ -495,112 +492,4 @@ void opencv_twoview_sba(const Mat_<double>&k,const Mat_<double>&p1,const Mat_<do
                //std::cout<<new_points<<std::endl;
     }
 
-}
-void opencv_twoview_sba_struct(const Mat_<double>&k,const Mat_<double>&p1,const Mat_<double>&p2,const Mat_<double>&points,const Mat_<double>&points1,const Mat_<double>&points2,Mat_<double>&new_p1,Mat_<double>&new_p2,Mat_<double>&new_points,int maxiter,int verbose)
-{
-    struct globs_ globs;
-    double ical[5]={k(0,0),k(0,2),k(1,2),k(1,1)/k(0,0),0};//f cx cy ar s;
-    double opts[SBA_OPTSSZ], info[SBA_INFOSZ];
-    int cnp=6;  //相机矩阵用3位表示旋转，3位表示位移
-    int pnp=3;  //三维点的坐标数
-    int mnp=2;  //二维点的坐标数
-    int numpts3D=points.cols;   //三维点的数量
-    int nconstpts3D=0;  //从第几个三维点开始计算
-    int nframes=2;  //相机的数量
-    int nconstframes=0; //从第几个相机开始计算，此处保持第0号相机固定，从第1号相机开始计算
-    int numprojs=numpts3D*nframes; //在所有相机下，三维点共计有多少个二维投影
-    //vmask[i,j]表示第i个点在第j个镜头下是否可见，此处填充为全1，因为点在两个镜头下均可见
-    char *vmask=new char[numpts3D*nframes];
-    std::fill_n(vmask, numpts3D*nframes, 1);
-    //将相机矩阵p1和p2转换为四元数表示
-    //r1和r2是四元数，表示旋转矩阵
-    //t1和t2是位移向量
-    double r1[3],t1[3],r2[3],t2[3];
-    cammat2quat(p1,r1,t1);
-    cammat2quat(p2,r2,t2);
-    //motstruct是待优化的相机矩阵和三维点，其结构为(r1,t1,r2,t2,X[1],X[2]...X[n])
-    int motstruct_size=nframes*cnp+numpts3D*pnp;
-    double *motstruct=new double[motstruct_size]();
-    //拷贝相机矩阵
-    std::copy(r1+1, r1+3, motstruct);
-    std::copy(t1, t1+3, motstruct+3);
-    std::copy(r2+1, r2+4, motstruct+6);
-    std::copy(t2, t2+3, motstruct+9);
-    //拷贝三维点
-    int pstart=nframes*cnp; //三维点的开始位置
-    for(int i=0;i<numpts3D;i++)
-    {
-        motstruct[pstart+i*pnp]=points(0,i);
-        motstruct[pstart+i*pnp+1]=points(1,i);
-        motstruct[pstart+i*pnp+2]=points(2,i);
-    }
-    /*
-    //如果要对相机旋转矩阵和三维点的位置同时优化，必须将相机矩阵的旋转初始化为0，即四元数表示的(1,0,0,0)
-    //并用globs.rot0params保存了相机旋转矩阵
-    //若只对三维点的位置进行优化，此步不做
-    for(int i=0; i<nframes; ++i){
-        int j=(i+1)*cnp; // 跳过位移向量
-        motstruct[j-4]=motstruct[j-5]=motstruct[j-6]=0.0; // 设置为(1,0,0,0)
-    }*/
-    //imgpts保存三维点在每个相机下的投影，即二维点
-    //imgpts[i,j]是第i个三维点在第j个相机下的投影
-    double *imgpts=new double[numprojs*mnp]();
-    for(int i=0;i<numpts3D;i++)
-    {
-        imgpts[i*nframes*mnp]=points1(0,i);
-        imgpts[i*nframes*mnp+1]=points1(1,i);
-        imgpts[i*nframes*mnp+2]=points2(0,i);
-        imgpts[i*nframes*mnp+3]=points2(1,i);
-    }
-    double *covimgpts=NULL;
-    //设置globs
-    globs.cnp=cnp;
-    globs.pnp=pnp;
-    globs.mnp=mnp;
-    globs.rot0params=new double[FULLQUATSZ*nframes]();
-    std::copy(r1,r1+4, globs.rot0params);
-    std::copy(r2,r2+4, globs.rot0params+4);
-    globs.intrcalib=ical;
-    globs.ptparams=NULL;
-    globs.camparams=NULL;
-    
-    //设置优化选项
-    opts[0]=SBA_INIT_MU; opts[1]=SBA_STOP_THRESH; opts[2]=SBA_STOP_THRESH;
-    opts[3]=SBA_STOP_THRESH;
-    //opts[3]=0.05*numprojs; // uncomment to force termination if the average reprojection error drops below 0.05
-    opts[4]=0.0;
-    //opts[4]=1E-05; // uncomment to force termination if the relative reduction in the RMS reprojection error drops below 1E-05
-    
-    /*opts[0]=1E-8; opts[1]=1E-15; opts[2]=1E-15;
-     opts[3]=1E-15;
-     //opts[3]=0.05*numprojs; // uncomment to force termination if the average reprojection error drops below 0.05
-     opts[4]=0.0;*/
-    //优化
-    int n=sba_motstr_levmar_x(numpts3D, nconstpts3D, nframes, nconstframes, vmask, motstruct, cnp, pnp, imgpts, covimgpts, mnp,img_projsRTS_x,img_projsRTS_jac_x,(void*)(&globs),maxiter, verbose, opts, info);
-    if(n!=SBA_ERROR)
-    {
-        
-        printSBAData(stdout, motstruct, cnp, pnp, mnp, vec2quat, cnp+1, nframes, numpts3D, imgpts, numprojs, vmask);
-        
-        new_p1.create(3, 4);
-        new_p2.create(3,4);
-        new_points.create(4,numpts3D);
-        std::copy(motstruct, motstruct+3, r1);
-        std::copy(motstruct+3, motstruct+6, t1);
-        std::copy(motstruct+6, motstruct+9, r2);
-        std::copy(motstruct+9, motstruct+12, t2);
-        quat2cammat(r1, t1, new_p1);
-        quat2cammat(r2, t2, new_p2);
-        std::cout<<new_p2<<std::endl;
-        int i=0;
-        for (double *p=motstruct+12; p!=motstruct+motstruct_size; p+=3) {
-            new_points(0,i)=*p;
-            new_points(1,i)=*(p+1);
-            new_points(2,i)=*(p+2);
-            new_points(3,i)=1;
-            i++;
-        }
-        //std::cout<<new_points<<std::endl;
-    }
-    
 }

@@ -60,6 +60,10 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
+            argument = "/Users/liuji/Projects/Computer_Vision/opencv/3d/images/iphone.xml"
+            isEnabled = "YES">
+         </CommandLineArgument>
+         <CommandLineArgument
             argument = "/Users/liuji/Projects/Computer_Vision/opencv/3d/images/images.txt"
             isEnabled = "YES">
          </CommandLineArgument>

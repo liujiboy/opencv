@@ -16,15 +16,17 @@ using namespace cv;
 using namespace std;
 class CloudPoint {
 private:
+    vector<int> pointIndicesInFrame;
+    const vector<vector<Point2d> >& pointsInFrame;
+public:
     double x;
     double y;
     double z;
-    vector<int> pointIndexInFrame;
-    const vector<vector<Point2d> >& pointsInFrame;
-public:
-    CloudPoint(int nframe,const vector<vector<Point2d> >& pointsInFrame);
+    CloudPoint(double x,double y,double z,int nframe,const vector<vector<Point2d> >& pointsInFrame);
     void setPointIndex(int frame,int index);
+    int  getPointIndex(int frame);
     bool getPointInFrame(int frame,Point2d&point)const;
+    friend ostream&operator<<(ostream&out,const CloudPoint&cp);
 };
 
 #endif /* defined(__sfm__CloudPoint__) */
