@@ -11,6 +11,7 @@
 #include <iostream>
 #include <vector>
 #include <fstream>
+#include <sstream>
 #include "opencv_sba.h"
 #include "CloudPoint.h"
 using namespace std;
@@ -250,6 +251,7 @@ Mat_<double> trianglulateAndFindCameraMatrix(const Mat_<double>&points1,const Ma
     P2Vector[bestIndex].copyTo(P2);
     return points3dVector[bestIndex];
 }
+/*
 Scalar reprojectError(const Mat_<double>& points2d,const Mat& cameraMatrix,const Mat&P,const Mat_<double> points3d)
 {
     vector<double> errors;
@@ -270,7 +272,7 @@ Scalar reprojectError(const Mat_<double>& points2d,const Mat& cameraMatrix,const
         errors.push_back(e);
     }
     return mean(errors);
-}
+}*/
 void plotCircle( Mat&img,const Mat_<double>&points,const Scalar &color,int radius=3,int thickness=-1, int lineType=8, int shift=0)
 {
     
@@ -287,10 +289,11 @@ void showImage(const string&name,const Mat&img,int flags = WINDOW_NORMAL)
     namedWindow(name,flags);
     imshow(name, img);
 }
-void testTwoView(const vector<Mat>&images,const Mat&cameraMatrix,int nframe,const vector<vector<Point2d> > &keypoints,const vector<Mat> &descriptors,vector<vector<vector<DMatch>> >&matches,const vector<vector<Mat> > &fmatrices)
+/*
+void testTwoView(const vector<Mat>&images,const Mat&cameraMatrix,int nframes,const vector<vector<Point2d> > &keypoints,const vector<Mat> &descriptors,vector<vector<vector<DMatch>> >&matches,const vector<vector<Mat> > &fmatrices)
 {
-    for (int i=0; i<nframe; i++) {
-        for (int j=i+1; j<nframe; j++) {
+    for (int i=0; i<nframes; i++) {
+        for (int j=i+1; j<nframes; j++) {
             Mat_<double>points0,points1;
             getMatchPoints(keypoints[i],keypoints[j],matches[i][j] , points0, points1);
             cout<<"对图像"<<i<<"和图像"<<j<<"的匹配点进行三角化"<<endl;
@@ -304,13 +307,12 @@ void testTwoView(const vector<Mat>&images,const Mat&cameraMatrix,int nframe,cons
             cout<<reprojectError(points0,cameraMatrix,P1,points)<<endl;
             cout<<reprojectError(points1,cameraMatrix,P2,points)<<endl;
             
-            
-            /*
+ 
              saveMat(points0, "/Users/liuji/Documents/workspace/SFM/x1.txt");
              saveMat(points1, "/Users/liuji/Documents/workspace/SFM/x2.txt");
              saveMat(P1, "/Users/liuji/Documents/workspace/SFM/P1.txt");
              saveMat(P2, "/Users/liuji/Documents/workspace/SFM/P2.txt");
-             saveMat(points, "/Users/liuji/Documents/workspace/SFM/X.txt");*/
+             saveMat(points, "/Users/liuji/Documents/workspace/SFM/X.txt");
             Mat_<double> new_P1;
             Mat_<double> new_P2;
             Mat_<double> new_points;
@@ -328,8 +330,35 @@ void testTwoView(const vector<Mat>&images,const Mat&cameraMatrix,int nframe,cons
             waitKey();
         }
     }
+}*/
+void reprojectError(const Mat_<double>&cameraMatrix,const vector<CloudPoint>&cloudPoints,const vector<Mat_<double> >&pmatrices,int nframes)
+{
+    for (int frame=0; frame<nframes; frame++) {
+        Mat_<double> p=pmatrices[frame];
+        double error=0;
+        double n=0;
+        for (int i=0; i<cloudPoints.size(); i++) {
+            CloudPoint cp=cloudPoints[i];
+            Point2d point2d;
+            if(cp.getPointInFrame(frame, point2d))
+            {
+                n++;
+                Mat_<double> point(4,1);
+                point(0)=cp.x;
+                point(1)=cp.y;
+                point(2)=cp.z;
+                point(3)=1;
+                Mat_<double> projected=cameraMatrix*p*point;
+                projected=projected/projected(2);
+                double ex=projected(0)-point2d.x;
+                double ey=projected(1)-point2d.y;
+                error+=sqrt(ex*ex+ey*ey);
+            }
+        }
+        cout<<"视图"<<frame<<"投影点数为："<<n<<" 平均投影误差为："<<error/n<<endl;
+    }
 }
-void initialReconstruct(const vector<Mat>&images,const Mat&cameraMatrix,int nframe,const vector<vector<Point2d> > &keypoints,const vector<Mat> &descriptors,vector<vector<vector<DMatch>> >&matches,const vector<vector<Mat> > &fmatrices, vector<CloudPoint>&cloudPoints,vector<Mat_<double> >&pmatrices)
+void initialReconstruct(const vector<Mat>&images,const Mat&cameraMatrix,int nframes,const vector<vector<Point2d> > &keypoints,const vector<Mat> &descriptors,vector<vector<vector<DMatch>> >&matches,const vector<vector<Mat> > &fmatrices, vector<CloudPoint>&cloudPoints,vector<Mat_<double> >&pmatrices)
 {
     Mat_<double>points0,points1;
     getMatchPoints(keypoints[0],keypoints[1],matches[0][1] , points0, points1);
@@ -337,7 +366,22 @@ void initialReconstruct(const vector<Mat>&images,const Mat&cameraMatrix,int nfra
     Mat P1=Mat(Matx34d(1,0,0,0,0,1,0,0,0,0,1,0));
     Mat_<double> P2;
     Mat_<double> points=trianglulateAndFindCameraMatrix(points0, points1, cameraMatrix, P1, fmatrices[0][1], P2);
+    for (int i=0; i<points.cols; i++) {
+        double x=points(0,i);
+        double y=points(1,i);
+        double z=points(2,i);
+        CloudPoint cp(x,y,z,nframes,keypoints);
+        cp.setPointIndex(0, matches[0][1][i].queryIdx);
+        cp.setPointIndex(1, matches[0][1][i].trainIdx);
+        cloudPoints.push_back(cp);
+    }
+    pmatrices[0]=P1;
+    pmatrices[1]=P2;
+    //reprojectError(cameraMatrix, cloudPoints, pmatrices, 2);
     cout<<"三角化完成，开始bundle adjustment"<<endl;
+    nviewSba(cameraMatrix, pmatrices, cloudPoints, 2);
+    reprojectError(cameraMatrix, cloudPoints, pmatrices, 2);
+    /*
     Mat_<double> new_P1;
     Mat_<double> new_P2;
     Mat_<double> new_points;
@@ -349,16 +393,47 @@ void initialReconstruct(const vector<Mat>&images,const Mat&cameraMatrix,int nfra
         double x=new_points(0,i);
         double y=new_points(1,i);
         double z=new_points(2,i);
-        CloudPoint cp(x,y,z,nframe,keypoints);
+        CloudPoint cp(x,y,z,nframes,keypoints);
         cp.setPointIndex(0, matches[0][1][i].queryIdx);
         cp.setPointIndex(1, matches[0][1][i].trainIdx);
         cloudPoints.push_back(cp);
-    }
+    }*/
 }
 void printCloudPoints(const vector<CloudPoint>&cloudPoints)
 {
     for (vector<CloudPoint>::const_iterator it=cloudPoints.begin(); it!=cloudPoints.end(); it++) {
         cout<<*it<<endl;
+    }
+}
+void plotCloudPoints(const Mat_<double>&cameraMatrix,const vector<Mat>&images,const vector<CloudPoint>&cloudPoints,const vector<Mat_<double> >&pmatrices,int nframes)
+{
+    for (int frame=0;frame<nframes; frame++) {
+        Mat image=images[frame].clone();
+        Mat_<double> p=pmatrices[frame];
+        for (int i=0; i<cloudPoints.size(); i++) {
+            Point2d point;
+            CloudPoint cp=cloudPoints[i];
+            if(cp.getPointInFrame(frame, point))
+            {
+                circle(image, point, 3, Scalar(0,0,255),-1);
+                Mat_<double> point3d(4,1);
+               
+                point3d(0)=cp.x;
+                point3d(1)=cp.y;
+                point3d(2)=cp.z;
+                point3d(3)=1;
+                Mat_<double> projected=cameraMatrix*p*point3d;
+                projected=projected/projected(2);
+                circle(image, Point2d(projected(0),projected(1)), 3, Scalar(255,0,0),-1);
+            }
+        }
+        string name;
+        stringstream ss;
+        ss<<"view:"<<frame;
+        ss>>name;
+        showImage(name, image);
+        waitKey();
+        
     }
 }
 void findKnownPoints(vector<CloudPoint>&cloudPoints,int frame,int prevFrame,const vector<DMatch>&match,bool *known,Mat_<double>&points)
@@ -414,22 +489,39 @@ Mat_<double> findPmatrixByKnownPoints(const vector<DMatch>&match,bool* known,con
     p(2,3)=tvec(2);
     return p;
 }
-void reconstructByKnownPoints(int nframe,int frame,int prevFrame,const vector<vector<Point2d> > &keypoints,const vector<DMatch>&match,const Mat_<double>&cameraMatrix,bool *known,Mat_<double> &points,vector<CloudPoint>&cloudPoints,vector<Mat_<double> >&pmatrices)
+void reconstructByKnownPoints(int nframes,int frame,int prevFrame,const vector<vector<Point2d> > &keypoints,const vector<DMatch>&match,const Mat_<double>&cameraMatrix,bool *known,Mat_<double> &points,vector<CloudPoint>&cloudPoints,vector<Mat_<double> >&pmatrices)
 {
     //重建未知的三维点
-    Mat_<double>points0,points1;
-    getMatchPoints(keypoints[prevFrame],keypoints[frame],match , points0, points1);
-    Mat_<double> kpoints0=cameraMatrix.inv()*points0;
-    Mat_<double> kpoints1=cameraMatrix.inv()*points1;
+    //Mat_<double>points0,points1;
+    //getMatchPoints(keypoints[prevFrame],keypoints[frame],match , points0, points1);
+    //Mat_<double> kpoints0=cameraMatrix.inv()*points0;
+    //Mat_<double> kpoints1=cameraMatrix.inv()*points1;
+    Mat_<double> invCameraMatrix=cameraMatrix.inv();
     for (int i=0; i<match.size(); i++) {
         if(!known[i])
         {
-            
-            Mat_<double> point=points.col(i);
-            triangulatePoint(kpoints0.col(i),kpoints1.col(i),pmatrices[prevFrame],pmatrices[frame],point);
+            int a=match[i].queryIdx;
+            int b=match[i].trainIdx;
+            Mat_<double> point1(3,1);
+            Mat_<double> point2(3,1);
+            point1(0)=keypoints[prevFrame][a].x;
+            point1(1)=keypoints[prevFrame][a].y;
+            point1(2)=1;
+            point2(0)=keypoints[frame][a].x;
+            point2(1)=keypoints[frame][b].y;
+            point2(2)=1;
+            point1=invCameraMatrix*point1;
+            point2=invCameraMatrix*point2;
+            Mat_<double> point(4,1);
+            triangulatePoint(point1,point2,pmatrices[prevFrame],pmatrices[frame],point);
+            CloudPoint cp(point(0),point(1),point(2),nframes,keypoints);
+            cp.setPointIndex(prevFrame, a);
+            cp.setPointIndex(frame, b);
+            cloudPoints.push_back(cp);
         }
     }
-    
+
+    /*
     cout<<"重建误差为:"<<reprojectError(points0,cameraMatrix,pmatrices[prevFrame],points)<<" "<<reprojectError(points1,cameraMatrix,pmatrices[frame],points)<<endl;
     cout<<"开始bundle adjustment"<<endl;
     //把known[i]==true的点放在前面不进行优化
@@ -476,13 +568,13 @@ void reconstructByKnownPoints(int nframe,int frame,int prevFrame,const vector<ve
     for(int i=0;i<match.size();i++)
     {
         if (!known[i]) {
-            CloudPoint cp(points(0,i),points(1,i),points(2,i),nframe,keypoints);
+            CloudPoint cp(points(0,i),points(1,i),points(2,i),nframes,keypoints);
             cp.setPointIndex(prevFrame, match[i].queryIdx);
             cp.setPointIndex(frame, match[i].trainIdx);
             cloudPoints.push_back(cp);
         }
     }
-    /*
+    
     Mat outImg1=images[prevFrame].clone();
     Mat outImg2=images[frame].clone();
     plotCircle(outImg1, points0, Scalar(255,0,0));
@@ -494,15 +586,18 @@ void reconstructByKnownPoints(int nframe,int frame,int prevFrame,const vector<ve
     waitKey();*/
 
 }
-void addView(int nframe,int frame,const vector<Mat>&images,const Mat_<double>&cameraMatrix,const vector<vector<Point2d> > &keypoints,vector<vector<vector<DMatch>> >& matches,vector<CloudPoint>&cloudPoints,vector<Mat_<double> >&pmatrices)
+void addView(int nframes,int frame,const Mat_<double>&cameraMatrix,const vector<vector<Point2d> > &keypoints,vector<vector<vector<DMatch>> >& matches,vector<CloudPoint>&cloudPoints,vector<Mat_<double> >&pmatrices)
 {
     int prevFrame=frame-1;
     vector<DMatch> match=matches[prevFrame][frame];
-    bool *known=new bool[(int)match.size()];
+    bool *known=new bool[(int)match.size()]();
     Mat_<double> points(4,(int)match.size()); //根据当前视图和前一视图重建的三维点
     findKnownPoints(cloudPoints,frame,prevFrame,match,known,points);
     pmatrices[frame]=findPmatrixByKnownPoints(match,known,keypoints,cameraMatrix,points,frame);
-    reconstructByKnownPoints(nframe,frame,prevFrame,keypoints,match,cameraMatrix,known,points,cloudPoints,pmatrices);
+    reconstructByKnownPoints(nframes,frame,prevFrame,keypoints,match,cameraMatrix,known,points,cloudPoints,pmatrices);
+    //reprojectError(cameraMatrix, cloudPoints, pmatrices, frame+1);
+    nviewSba(cameraMatrix, pmatrices, cloudPoints, frame+1);
+    reprojectError(cameraMatrix, cloudPoints, pmatrices, frame+1);
            /*
      Mat_<double> new_P1;
      Mat_<double> new_P2;
@@ -513,6 +608,49 @@ void addView(int nframe,int frame,const vector<Mat>&images,const Mat_<double>&ca
     delete known;
 
 }
+void saveCloudPoints(const vector<CloudPoint>&cloudPoints,const char* fileName)
+{
+    ofstream out(fileName);
+    Mat_<double> m((int)cloudPoints.size(),3);
+    for(int i=0;i<cloudPoints.size();i++)
+    {
+        m(i,0)=cloudPoints[i].x;
+        m(i,1)=cloudPoints[i].y;
+        m(i,2)=cloudPoints[i].z;
+    }
+    out<<cv::format(m, "csv");
+    out.close();
+}
+void saveCloudPointsToPly(int nframes,const vector<Mat>&images,const vector<CloudPoint>&cloudPoints,const char* fileName)
+{
+    ofstream out(fileName);
+    out<<"ply"<<endl;
+    out<<"format ascii 1.0"<<endl;
+    out<<"element vertex "<<cloudPoints.size()<<endl;
+    out<<"property float x"<<endl;
+    out<<"property float y"<<endl;
+    out<<"property float z"<<endl;
+    out<<"property uchar diffuse_red"<<endl;
+    out<<"property uchar diffuse_green"<<endl;
+    out<<"property uchar diffuse_blue"<<endl;
+    out<<"end_header"<<endl;
+    for(int i=0;i<cloudPoints.size();i++)
+    {
+        const CloudPoint& cp=cloudPoints[i];
+        out<<cp.x<<" "<<cp.y<<" "<<cp.z<<" ";
+        for(int frame=0;frame<nframes;frame++)
+        {
+            Point2d p;
+            if(cp.getPointInFrame(frame, p))
+            {
+                Vec3b color=images[frame].at<Vec3b>(p.y,p.x);
+                out<<(int)color[2]<<" "<<(int)color[1]<<" "<<(int)color[0]<<endl;
+                break;
+            }
+        }
+    }
+    out.close();
+}
 int main(int argc, const char * argv[]) {
     vector<CloudPoint> cloudPoints;
     //加载相机矩阵
@@ -522,22 +660,22 @@ int main(int argc, const char * argv[]) {
     Mat distortion;
     fs["Camera_Matrix"]>>cameraMatrix;
     fs["Distortion_Coefficients"]>>distortion;
-    SIFT sift;
-    int nframe; //图片数量
+    SIFT sift(0, 3, 0.04, 10, 1.6);
+    int nframes; //图片数量
     vector<Mat> images; //图片
     
     cout<<"加载图像"<<endl;
     loadImages(images,argv[2]);
-    nframe=(int)images.size();
+    nframes=(int)images.size();
     vector<vector<Point2d> > keypoints; //keypoints[i][j]表示第i张第j个图片的特征点
     vector<Mat> descriptors; //descriptors[i]表示第i张图片特征点的描述
-    vector<vector<Mat> > fmatrices(nframe,vector<Mat>(nframe)); //fmatrices[i][j]表示第i张图片和第j张图片间的基础矩阵
-    vector<vector<vector<DMatch>> > matches(nframe,vector<vector<DMatch>>(nframe)); //matches[i][j]表示第i张图片和第j张图片间特征点的匹配
-    vector<Mat_<double> > pmatrices(nframe); //pmatrices[i]表示第i张图片的投影矩阵
+    vector<vector<Mat> > fmatrices(nframes,vector<Mat>(nframes)); //fmatrices[i][j]表示第i张图片和第j张图片间的基础矩阵
+    vector<vector<vector<DMatch>> > matches(nframes,vector<vector<DMatch>>(nframes)); //matches[i][j]表示第i张图片和第j张图片间特征点的匹配
+    vector<Mat_<double> > pmatrices(nframes); //pmatrices[i]表示第i张图片的投影矩阵
     cout<<"计算图像特征"<<endl;
     computeFeatures(images,keypoints,descriptors);
-    for (int i=0; i<nframe; i++) {
-        for (int j=i+1; j<nframe; j++) {
+    for (int i=0; i<nframes; i++) {
+        for (int j=i+1; j<nframes; j++) {
             cout<<"求图像"<<i<<"和图像"<<j<<"之间的匹配以及基础矩阵"<<endl;
             vector<DMatch> match;
             Mat f=findMatchesByFundamentalMat(keypoints[i],keypoints[j],descriptors[i],descriptors[j],match);
@@ -547,15 +685,18 @@ int main(int argc, const char * argv[]) {
     }
     cout<<"初始重建(图像0和图像1)"<<endl;
     //用视图1和视图2进行重建
-    initialReconstruct(images,cameraMatrix,nframe,keypoints,descriptors,matches,fmatrices, cloudPoints, pmatrices);
+    initialReconstruct(images,cameraMatrix,nframes,keypoints,descriptors,matches,fmatrices, cloudPoints, pmatrices);
+    
     //增加视图
-    for (int frame=2; frame<nframe; frame++) {
+    for (int frame=2; frame<nframes; frame++) {
        
         cout<<"增加视图"<<frame<<endl;
-        addView(nframe,frame,images,cameraMatrix,keypoints,matches,cloudPoints,pmatrices);
-        
+        addView(nframes,frame,cameraMatrix,keypoints,matches,cloudPoints,pmatrices);
     }
+    plotCloudPoints(cameraMatrix, images, cloudPoints, pmatrices, nframes);
     //printCloudPoints(cloudPoints);
-    //testTwoView(images,K,nframe,keypoints,descriptors,matches,fmatrices);
+    saveCloudPoints(cloudPoints, "/Users/liuji/clouds.txt");
+    saveCloudPointsToPly(nframes, images, cloudPoints, "/Users/liuji/clouds.ply");
+    //testTwoView(images,K,nframes,keypoints,descriptors,matches,fmatrices);
     return 0;
 }

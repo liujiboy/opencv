@@ -1,0 +1,6 @@
+/Users/liuji/Projects/Computer_Vision/opencv/3d/images/ball/IMG_2742.JPG
+/Users/liuji/Projects/Computer_Vision/opencv/3d/images/ball/IMG_2743.JPG
+/Users/liuji/Projects/Computer_Vision/opencv/3d/images/ball/IMG_2744.JPG
+/Users/liuji/Projects/Computer_Vision/opencv/3d/images/ball/IMG_2745.JPG
+/Users/liuji/Projects/Computer_Vision/opencv/3d/images/ball/IMG_2746.JPG
+/Users/liuji/Projects/Computer_Vision/opencv/3d/images/ball/IMG_2747.JPG

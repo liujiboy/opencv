@@ -22,7 +22,7 @@ public:
     double x;
     double y;
     double z;
-    CloudPoint(double x,double y,double z,int nframe,const vector<vector<Point2d> >& pointsInFrame);
+    CloudPoint(double x,double y,double z,int nframes,const vector<vector<Point2d> >& pointsInFrame);
     void setPointIndex(int frame,int index);
     int  getPointIndex(int frame);
     bool getPointInFrame(int frame,Point2d&point)const;

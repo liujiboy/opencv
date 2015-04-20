@@ -1,0 +1,2 @@
+/Users/liuji/Projects/Computer_Vision/opencv/3d/images/house/alcatraz1.jpg
+/Users/liuji/Projects/Computer_Vision/opencv/3d/images/house/alcatraz2.jpg

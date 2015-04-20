@@ -7,7 +7,7 @@
 //
 
 #include "CloudPoint.h"
-CloudPoint::CloudPoint(double x,double y,double z,int nframe,const vector<vector<Point2d> >& pointsInFrame):pointIndicesInFrame(nframe,-1),pointsInFrame(pointsInFrame)
+CloudPoint::CloudPoint(double x,double y,double z,int nframes,const vector<vector<Point2d> >& pointsInFrame):pointIndicesInFrame(nframes,-1),pointsInFrame(pointsInFrame)
 {
     this->x=x;
     this->y=y;

@@ -383,14 +383,14 @@ void opencv_twoview_sba(const Mat_<double>&k,const Mat_<double>&p1,const Mat_<do
     //将相机矩阵p1和p2转换为四元数表示
     //r1和r2是四元数，表示旋转矩阵
     //t1和t2是位移向量
-    double r1[3],t1[3],r2[3],t2[3];
+    double r1[4],t1[3],r2[4],t2[3];
     cammat2quat(p1,r1,t1);
     cammat2quat(p2,r2,t2);
     //motstruct是待优化的相机矩阵和三维点，其结构为(r1,t1,r2,t2,X[1],X[2]...X[n])
     int motstruct_size=nframes*cnp+numpts3D*pnp;
     double *motstruct=new double[motstruct_size]();
     //拷贝相机矩阵
-    std::copy(r1+1, r1+3, motstruct);
+    std::copy(r1+1, r1+4, motstruct);
     std::copy(t1, t1+3, motstruct+3);
     std::copy(r2+1, r2+4, motstruct+6);
     std::copy(t2, t2+3, motstruct+9);
@@ -490,6 +490,160 @@ void opencv_twoview_sba(const Mat_<double>&k,const Mat_<double>&p1,const Mat_<do
             i++;
         }
                //std::cout<<new_points<<std::endl;
+    }
+
+}
+void nviewSba(const Mat_<double>&cameraMatrix, vector<Mat_<double> >& pmatrices,vector<CloudPoint> &cloudPoints,int nframes,int nconstpts3D,int nconstframes,int maxiter,int verbose)
+{
+    int cnp=6;  //相机矩阵用3位表示旋转，3位表示位移
+    int pnp=3;  //三维点的坐标数
+    int mnp=2;  //二维点的坐标数
+    double ical[5]={cameraMatrix(0,0),cameraMatrix(0,2),cameraMatrix(1,2),cameraMatrix(1,1)/cameraMatrix(0,0),0};//f cx cy ar s;
+    double opts[SBA_OPTSSZ], info[SBA_INFOSZ];
+    struct globs_ globs;
+    //设置globs
+    globs.cnp=cnp;
+    globs.pnp=pnp;
+    globs.mnp=mnp;
+    globs.rot0params=new double[FULLQUATSZ*nframes]();
+    globs.intrcalib=ical;
+    globs.ptparams=NULL;
+    globs.camparams=NULL;
+    
+    //设置优化选项
+    opts[0]=SBA_INIT_MU;
+    opts[1]=SBA_STOP_THRESH;
+    opts[2]=SBA_STOP_THRESH;
+    opts[3]=SBA_STOP_THRESH;
+    opts[4]=0.0;
+    
+    
+    int numpts3D=(int)cloudPoints.size();   //三维点的数量
+    int numprojs=0; //在所有相机下，三维点共计有多少个二维投影
+    //vmask[i,j]表示第i个点在第j个镜头下是否可见，此处填充为全1，因为点在两个镜头下均可见
+    char *vmask=new char[numpts3D*nframes]();
+    for(int i=0;i<numpts3D;i++)
+    {
+        CloudPoint cp=cloudPoints[i];
+        for (int j=0; j<nframes; j++) {
+            int index=i*nframes+j;
+            if(cp.getPointIndex(j)!=-1)
+            {
+                vmask[index]=1;
+                numprojs++;
+            }
+        }
+    }
+    //motstruct是待优化的相机矩阵和三维点，其结构为(r1,t1,r2,t2,X[1],X[2]...X[n])
+    int motstruct_size=nframes*cnp+numpts3D*pnp;
+    double *motstruct=new double[motstruct_size]();
+    for(int i=0;i<nframes;i++)
+    {
+        Mat_<double> p=pmatrices[i];
+        double r[4],t[3];
+        cammat2quat(p, r, t);
+        copy(r+1, r+4, motstruct+i*cnp);
+        copy(t,t+3,motstruct+i*cnp+3);
+        copy(r,r+4, globs.rot0params+i*FULLQUATSZ);
+    }
+    //拷贝三维点
+    int pstart=nframes*cnp; //三维点的开始位置
+    for(int i=0;i<numpts3D;i++)
+    {
+        CloudPoint cp=cloudPoints[i];
+        motstruct[pstart+i*pnp]=cp.x;
+        motstruct[pstart+i*pnp+1]=cp.y;
+        motstruct[pstart+i*pnp+2]=cp.z;
+    }
+    //如果要对相机旋转矩阵和三维点的位置同时优化，必须将相机矩阵的旋转初始化为0，即四元数表示的(1,0,0,0)
+    //并用globs.rot0params保存了相机旋转矩阵
+    //若只对三维点的位置进行优化，此步不做
+    for(int i=0; i<nframes; ++i){
+        int j=(i+1)*cnp; // 跳过位移向量
+        motstruct[j-4]=motstruct[j-5]=motstruct[j-6]=0.0; // 设置为(1,0,0,0)
+    }
+    //imgpts保存三维点在每个相机下的投影，即二维点
+    double *imgpts=new double[numprojs*mnp]();
+    for(int i=0,n=0;i<numpts3D;i++)
+    {
+        CloudPoint cp=cloudPoints[i];
+        for (int j=0; j<nframes; j++) {
+            Point2d point;
+            if(cp.getPointInFrame(j, point))
+            {
+                imgpts[n*mnp]=point.x;
+                imgpts[n*mnp+1]=point.y;
+                n++;
+            }
+        }
+    }
+
+    double *covimgpts=NULL;
+    
+   
+    //优化
+    int n=sba_motstr_levmar_x(numpts3D, nconstpts3D, nframes, nconstframes, vmask, motstruct, cnp, pnp, imgpts, covimgpts, mnp,img_projsRTS_x,img_projsRTS_jac_x,(void*)(&globs),maxiter, verbose, opts, info);
+    if(n!=SBA_ERROR)
+    {
+        
+        /* combine the local rotation estimates with the initial ones */
+        for(int i=0; i<nframes; ++i){
+            double *v, qs[FULLQUATSZ], *q0, prd[FULLQUATSZ];
+            
+            /* retrieve the vector part */
+            v=motstruct + (i+1)*cnp - 6; // note the +1, we access the motion parameters from the right, assuming 3 for translation!
+            _MK_QUAT_FRM_VEC(qs, v);
+            
+            q0=globs.rot0params+i*FULLQUATSZ;
+            quatMultFast(qs, q0, prd); // prd=qs*q0
+            
+            /* copy back vector part making sure that the scalar part is non-negative */
+            if(prd[0]>=0.0){
+                v[0]=prd[1];
+                v[1]=prd[2];
+                v[2]=prd[3];
+            }
+            else{ // negate since two quaternions q and -q represent the same rotation
+                v[0]=-prd[1];
+                v[1]=-prd[2];
+                v[2]=-prd[3];
+            }
+        }
+        //printSBAData(stdout, motstruct, cnp, pnp, mnp, vec2quat, cnp+1, nframes, numpts3D, imgpts, numprojs, vmask);
+        for(int i=0;i<nframes;i++)
+        {
+            Mat_<double> p(3,4);
+            double r[3],t[3];
+            copy(motstruct+i*cnp, motstruct+3+i*cnp, r);
+            copy(motstruct+3+i*cnp, motstruct+6+i*cnp, t);
+            quat2cammat(r,t,p);
+            pmatrices[i]=p;
+        }
+        for (int i=0; i<numpts3D; i++) {
+            CloudPoint &cp=cloudPoints[i];
+            cp.x=motstruct[nframes*cnp+i*pnp];
+            cp.y=motstruct[nframes*cnp+i*pnp+1];
+            cp.z=motstruct[nframes*cnp+i*pnp+2];
+        }
+        /*
+        new_p1.create(3, 4);
+        new_p2.create(3,4);
+        new_points.create(4,numpts3D);
+        std::copy(motstruct, motstruct+3, r1);
+        std::copy(motstruct+3, motstruct+6, t1);
+        std::copy(motstruct+6, motstruct+9, r2);
+        std::copy(motstruct+9, motstruct+12, t2);
+        quat2cammat(r1, t1, new_p1);
+        quat2cammat(r2, t2, new_p2);
+        int i=0;
+        for (double *p=motstruct+12; p!=motstruct+motstruct_size; p+=3) {
+            new_points(0,i)=*p;
+            new_points(1,i)=*(p+1);
+            new_points(2,i)=*(p+2);
+            new_points(3,i)=1;
+            i++;
+        }*/
+        //std::cout<<new_points<<std::endl;
     }
 
 }

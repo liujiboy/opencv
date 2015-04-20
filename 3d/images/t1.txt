@@ -1,0 +1,4 @@
+/Users/liuji/Projects/Computer_Vision/opencv/3d/images/t1/IMG_2757.JPG
+/Users/liuji/Projects/Computer_Vision/opencv/3d/images/t1/IMG_2758.JPG
+/Users/liuji/Projects/Computer_Vision/opencv/3d/images/t1/IMG_2759.JPG
+/Users/liuji/Projects/Computer_Vision/opencv/3d/images/t1/IMG_2760.JPG
