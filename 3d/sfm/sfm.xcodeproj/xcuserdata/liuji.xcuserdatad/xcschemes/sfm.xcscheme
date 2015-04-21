@@ -87,6 +87,14 @@
             argument = "/Users/liuji/Projects/Computer_Vision/opencv/3d/images/house.txt"
             isEnabled = "NO">
          </CommandLineArgument>
+         <CommandLineArgument
+            argument = "/Users/liuji/clouds.txt"
+            isEnabled = "YES">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "/Users/liuji/clouds.ply"
+            isEnabled = "YES">
+         </CommandLineArgument>
       </CommandLineArguments>
       <AdditionalOptions>
       </AdditionalOptions>

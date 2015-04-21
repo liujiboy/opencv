@@ -332,8 +332,7 @@ void SFM::computeP(const Mat&E,vector<Mat>&pVector)
     {
         vt=-vt;
     }
-    //Matx33d s(1,0,0,0,1,0,0,0,0);
-    //Mat e=u*Mat(s)*vt;
+
     Matx33d w(0,-1,0,1,0,0,0,0,1);
     Mat_<double> R1=u*Mat(w)*vt;
     Mat_<double> R2=u*Mat(w).t()*vt;
@@ -355,11 +354,6 @@ void SFM::computeP(const Mat&E,vector<Mat>&pVector)
     pVector.push_back(Mat(P2));
     pVector.push_back(Mat(P3));
     pVector.push_back(Mat(P4));
-    
-    /* cout<<P1<<endl;
-     cout<<P2<<endl;
-     cout<<P3<<endl;
-     cout<<P4<<endl;*/
     
 }
 void SFM::triangulatePoint(const Mat_<double>&point1,const Mat_<double>&point2,const Mat_<double>&P1,const Mat_<double>&P2,Mat_<double>& point)
@@ -453,12 +447,12 @@ void SFM::initialReconstruct()
     }
     pmatrices[0]=P1;
     pmatrices[1]=P2;
-    cloud.reprojectError(2);
+    //cloud.reprojectError(2);
     cout<<"三角化完成，开始bundle adjustment"<<endl;
     nviewSba(2);
     cloud.reprojectError(2);
 }
-Mat_<double> SFM:: findPmatrixByKnownPoints(const vector<DMatch>&match,bool* known,const Mat_<double>&points,int frame)
+Mat_<double> SFM:: findPmatrixByKnownPoints(const vector<DMatch>&match,const bool* known,const Mat_<double>&points,int frame)
 {
     //根据已知的三位点确定投影矩阵
     vector<Point3f> objectPoints;
@@ -526,16 +520,9 @@ void SFM::addView(int frame)
     cloud.findKnownPoints(frame,prevFrame,match,known,points);
     pmatrices[frame]=findPmatrixByKnownPoints(match,known,points,frame);
     reconstructByKnownPoints(frame,prevFrame,match,known,points);
-    //reprojectError(cameraMatrix, cloudPoints, pmatrices, frame+1);
     nviewSba(frame+1);
     cloud.reprojectError(frame+1);
-    /*
-     Mat_<double> new_P1;
-     Mat_<double> new_P2;
-     Mat_<double> new_points;
-     opencv_twoview_sba(cameraMatrix,pmatrices[prevFrame],pmatrices[frame],points,points0,points1,new_P1,new_P2,new_points,250,10);
-     cout<<"重建误差为:"<<reprojectError(points0,cameraMatrix,new_P1,new_points)<<" "<<reprojectError(points1,cameraMatrix,new_P2,new_points)<<endl;
-     */
+ 
     delete known;
     
 }
@@ -663,7 +650,7 @@ void SFM::nviewSba(int frameNum,int nconstframes,int nconstpts3D,int maxiter,int
                 v[2]=-prd[3];
             }
         }
-        printSBAData(stdout, motstruct, cnp, pnp, mnp, vec2quat, cnp+1, frameNum, numpts3D, imgpts, numprojs, vmask);
+       // printSBAData(stdout, motstruct, cnp, pnp, mnp, vec2quat, cnp+1, frameNum, numpts3D, imgpts, numprojs, vmask);
         for(int i=0;i<frameNum;i++)
         {
             Mat_<double> p(3,4);

@@ -14,7 +14,12 @@
 #include <opencv2/opencv.hpp>
 using namespace cv;
 using namespace std;
+//一些opencv的工具函数，仅仅为了简化某些操作
 namespace opencvTool{
+    //显示图片
+    //name：窗体标题
+    //img：图片
+    //flags：WINDOW_NORMAL表示不自动调整窗口大小
     void showImage(const string&name,const Mat&img,int flags = WINDOW_NORMAL);
 }
 #endif /* defined(__sfm__OpencvTools__) */

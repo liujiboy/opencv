@@ -19,24 +19,19 @@ void Cloud::reprojectError(int frameNum)
 {
     
     for (int frame=0; frame<frameNum; frame++) {
-        Mat_<double> p=pmatrices[frame];
-        double error=0;
-        double n=0;
+        Mat_<double> p=pmatrices[frame]; //投影矩阵
+        double error=0; //误差
+        double n=0; //点数
         for (int i=0; i<cloudPoints.size(); i++) {
             CloudPoint cp=cloudPoints[i];
             Point2d point2d;
             if(cp.getPointInFrame(frame, point2d))
             {
                 n++;
-                Mat_<double> point(4,1);
-                point(0)=cp.x;
-                point(1)=cp.y;
-                point(2)=cp.z;
-                point(3)=1;
-                Mat_<double> projected=cameraMatrix*p*point;
-                projected=projected/projected(2);
-                double ex=projected(0)-point2d.x;
-                double ey=projected(1)-point2d.y;
+                Point2d projected=cp.project(cameraMatrix, p);
+                //计算误差
+                double ex=projected.x-point2d.x;
+                double ey=projected.y-point2d.y;
                 error+=sqrt(ex*ex+ey*ey);
             }
         }
@@ -55,15 +50,8 @@ void Cloud::plotCloudPoints(const vector<Mat>&images)
             if(cp.getPointInFrame(frame, point))
             {
                 circle(image, point, 3, Scalar(0,0,255),-1);
-                Mat_<double> point3d(4,1);
-                
-                point3d(0)=cp.x;
-                point3d(1)=cp.y;
-                point3d(2)=cp.z;
-                point3d(3)=1;
-                Mat_<double> projected=cameraMatrix*p*point3d;
-                projected=projected/projected(2);
-                circle(image, Point2d(projected(0),projected(1)), 3, Scalar(255,0,0),-1);
+                Point2d projected=cp.project(cameraMatrix, p);
+                circle(image, projected, 3, Scalar(255,0,0),-1);
             }
         }
         string name;
