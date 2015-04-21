@@ -9,6 +9,9 @@
 /* Begin PBXBuildFile section */
 		5E0FC9431ACA7E31009300A1 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5E0FC9421ACA7E31009300A1 /* main.cpp */; };
 		5E9296E11AE20505002F7B2A /* CloudPoint.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5E9296DF1AE20505002F7B2A /* CloudPoint.cpp */; };
+		5ECEFECA1AE55624008454AF /* Cloud.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5ECEFEC81AE55624008454AF /* Cloud.cpp */; };
+		5ECEFECD1AE5592C008454AF /* OpencvTools.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5ECEFECB1AE5592C008454AF /* OpencvTools.cpp */; };
+		5ECEFF261AE5F580008454AF /* SFM.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5ECEFF241AE5F580008454AF /* SFM.cpp */; };
 		5EF5FCAE1ADF3ACE00BCB423 /* imgproj.c in Sources */ = {isa = PBXBuildFile; fileRef = 5EF5FCA61ADF3ACE00BCB423 /* imgproj.c */; };
 		5EF5FCAF1ADF3ACE00BCB423 /* readparams.c in Sources */ = {isa = PBXBuildFile; fileRef = 5EF5FCA71ADF3ACE00BCB423 /* readparams.c */; };
 		5EF5FCB01ADF3ACE00BCB423 /* sba_chkjac.c in Sources */ = {isa = PBXBuildFile; fileRef = 5EF5FCA81ADF3ACE00BCB423 /* sba_chkjac.c */; };
@@ -16,7 +19,6 @@
 		5EF5FCB21ADF3ACE00BCB423 /* sba_lapack.c in Sources */ = {isa = PBXBuildFile; fileRef = 5EF5FCAA1ADF3ACE00BCB423 /* sba_lapack.c */; };
 		5EF5FCB31ADF3ACE00BCB423 /* sba_levmar_wrap.c in Sources */ = {isa = PBXBuildFile; fileRef = 5EF5FCAB1ADF3ACE00BCB423 /* sba_levmar_wrap.c */; };
 		5EF5FCB41ADF3ACE00BCB423 /* sba_levmar.c in Sources */ = {isa = PBXBuildFile; fileRef = 5EF5FCAC1ADF3ACE00BCB423 /* sba_levmar.c */; };
-		5EF5FCB71ADF3B2800BCB423 /* opencv_sba.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5EF5FCB51ADF3B2800BCB423 /* opencv_sba.cpp */; };
 		5EF5FCB91ADF405200BCB423 /* liblapack.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 5EF5FCB81ADF405200BCB423 /* liblapack.dylib */; };
 /* End PBXBuildFile section */
 
@@ -37,6 +39,12 @@
 		5E0FC9421ACA7E31009300A1 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		5E9296DF1AE20505002F7B2A /* CloudPoint.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CloudPoint.cpp; sourceTree = "<group>"; };
 		5E9296E01AE20505002F7B2A /* CloudPoint.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CloudPoint.h; sourceTree = "<group>"; };
+		5ECEFEC81AE55624008454AF /* Cloud.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Cloud.cpp; sourceTree = "<group>"; };
+		5ECEFEC91AE55624008454AF /* Cloud.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Cloud.h; sourceTree = "<group>"; };
+		5ECEFECB1AE5592C008454AF /* OpencvTools.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = OpencvTools.cpp; sourceTree = "<group>"; };
+		5ECEFECC1AE5592C008454AF /* OpencvTools.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OpencvTools.h; sourceTree = "<group>"; };
+		5ECEFF241AE5F580008454AF /* SFM.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SFM.cpp; sourceTree = "<group>"; };
+		5ECEFF251AE5F580008454AF /* SFM.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SFM.h; sourceTree = "<group>"; };
 		5EF5FCA01ADF3ABD00BCB423 /* compiler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = compiler.h; path = sba/compiler.h; sourceTree = "<group>"; };
 		5EF5FCA11ADF3ABD00BCB423 /* imgproj.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = imgproj.h; path = sba/imgproj.h; sourceTree = "<group>"; };
 		5EF5FCA21ADF3ABD00BCB423 /* readparams.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = readparams.h; path = sba/readparams.h; sourceTree = "<group>"; };
@@ -49,8 +57,6 @@
 		5EF5FCAA1ADF3ACE00BCB423 /* sba_lapack.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = sba_lapack.c; path = sba/sba_lapack.c; sourceTree = "<group>"; };
 		5EF5FCAB1ADF3ACE00BCB423 /* sba_levmar_wrap.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = sba_levmar_wrap.c; path = sba/sba_levmar_wrap.c; sourceTree = "<group>"; };
 		5EF5FCAC1ADF3ACE00BCB423 /* sba_levmar.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = sba_levmar.c; path = sba/sba_levmar.c; sourceTree = "<group>"; };
-		5EF5FCB51ADF3B2800BCB423 /* opencv_sba.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = opencv_sba.cpp; path = sba/opencv_sba.cpp; sourceTree = "<group>"; };
-		5EF5FCB61ADF3B2800BCB423 /* opencv_sba.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = opencv_sba.h; path = sba/opencv_sba.h; sourceTree = "<group>"; };
 		5EF5FCB81ADF405200BCB423 /* liblapack.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = liblapack.dylib; path = usr/lib/liblapack.dylib; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
@@ -88,8 +94,14 @@
 			children = (
 				5EF5FC9D1ADF3A9900BCB423 /* sba */,
 				5E0FC9421ACA7E31009300A1 /* main.cpp */,
+				5ECEFECB1AE5592C008454AF /* OpencvTools.cpp */,
+				5ECEFECC1AE5592C008454AF /* OpencvTools.h */,
+				5ECEFEC81AE55624008454AF /* Cloud.cpp */,
+				5ECEFEC91AE55624008454AF /* Cloud.h */,
 				5E9296DF1AE20505002F7B2A /* CloudPoint.cpp */,
 				5E9296E01AE20505002F7B2A /* CloudPoint.h */,
+				5ECEFF241AE5F580008454AF /* SFM.cpp */,
+				5ECEFF251AE5F580008454AF /* SFM.h */,
 			);
 			path = sfm;
 			sourceTree = "<group>";
@@ -106,7 +118,6 @@
 		5EF5FC9E1ADF3AA000BCB423 /* headers */ = {
 			isa = PBXGroup;
 			children = (
-				5EF5FCB61ADF3B2800BCB423 /* opencv_sba.h */,
 				5EF5FCA01ADF3ABD00BCB423 /* compiler.h */,
 				5EF5FCA11ADF3ABD00BCB423 /* imgproj.h */,
 				5EF5FCA21ADF3ABD00BCB423 /* readparams.h */,
@@ -126,7 +137,6 @@
 				5EF5FCAA1ADF3ACE00BCB423 /* sba_lapack.c */,
 				5EF5FCAB1ADF3ACE00BCB423 /* sba_levmar_wrap.c */,
 				5EF5FCAC1ADF3ACE00BCB423 /* sba_levmar.c */,
-				5EF5FCB51ADF3B2800BCB423 /* opencv_sba.cpp */,
 			);
 			name = sources;
 			sourceTree = "<group>";
@@ -188,13 +198,15 @@
 			buildActionMask = 2147483647;
 			files = (
 				5E9296E11AE20505002F7B2A /* CloudPoint.cpp in Sources */,
+				5ECEFECA1AE55624008454AF /* Cloud.cpp in Sources */,
 				5EF5FCB11ADF3ACE00BCB423 /* sba_crsm.c in Sources */,
 				5EF5FCAF1ADF3ACE00BCB423 /* readparams.c in Sources */,
+				5ECEFF261AE5F580008454AF /* SFM.cpp in Sources */,
 				5EF5FCB41ADF3ACE00BCB423 /* sba_levmar.c in Sources */,
 				5E0FC9431ACA7E31009300A1 /* main.cpp in Sources */,
 				5EF5FCAE1ADF3ACE00BCB423 /* imgproj.c in Sources */,
 				5EF5FCB21ADF3ACE00BCB423 /* sba_lapack.c in Sources */,
-				5EF5FCB71ADF3B2800BCB423 /* opencv_sba.cpp in Sources */,
+				5ECEFECD1AE5592C008454AF /* OpencvTools.cpp in Sources */,
 				5EF5FCB01ADF3ACE00BCB423 /* sba_chkjac.c in Sources */,
 				5EF5FCB31ADF3ACE00BCB423 /* sba_levmar_wrap.c in Sources */,
 			);
@@ -280,6 +292,11 @@
 		5E0FC9471ACA7E31009300A1 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					/usr/local/include,
+				);
 				LIBRARY_SEARCH_PATHS = /usr/local/lib;
 				OTHER_LDFLAGS = (
 					"-lopencv_core",
@@ -289,13 +306,18 @@
 					"-lopencv_calib3d",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				USER_HEADER_SEARCH_PATHS = /usr/local/include;
+				USER_HEADER_SEARCH_PATHS = "";
 			};
 			name = Debug;
 		};
 		5E0FC9481ACA7E31009300A1 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					/usr/local/include,
+				);
 				LIBRARY_SEARCH_PATHS = /usr/local/lib;
 				OTHER_LDFLAGS = (
 					"-lopencv_core",
@@ -305,7 +327,7 @@
 					"-lopencv_calib3d",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				USER_HEADER_SEARCH_PATHS = /usr/local/include;
+				USER_HEADER_SEARCH_PATHS = "";
 			};
 			name = Release;
 		};

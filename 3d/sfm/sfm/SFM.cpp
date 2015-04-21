@@ -1,33 +1,18 @@
 //
-//  opencv_sba.cpp
+//  SFM.cpp
 //  sfm
 //
-//  Created by  刘骥 on 15/4/16.
+//  Created by  刘骥 on 15/4/21.
 //  Copyright (c) 2015年  刘骥. All rights reserved.
 //
 
-#include "opencv_sba.h"
-#include "readparams.h"
-#include "imgproj.h"
-#include "sba.h"
-#include <math.h>
-#define MAXITER         100
-#define MAXITER2        150
+#include "SFM.h"
 /* unit quaternion from vector part */
 #define _MK_QUAT_FRM_VEC(q, v){                                     \
 (q)[1]=(v)[0]; (q)[2]=(v)[1]; (q)[3]=(v)[2];                      \
 (q)[0]=sqrt(1.0 - (q)[1]*(q)[1] - (q)[2]*(q)[2]- (q)[3]*(q)[3]);  \
 }
-template <class T>
-void print_array(T first,T last) {
-    int i=0;
-    while(first!=last)
-    {
-        std::cout<<i<<":"<<*first<<std::endl;
-        ++first;
-        ++i;
-    }
-}
+
 inline static void quatMultFast(double q1[FULLQUATSZ], double q2[FULLQUATSZ], double p[FULLQUATSZ])
 {
     double t1, t2, t3, t4, t5, t6, t7, t8, t9;
@@ -259,63 +244,12 @@ void vec2quat(double *inp, int nin, double *outp, int nout)
 }
 //r表示四元数的后三位
 void rotmat2quat(double *R,double *r){
-    /*
-    double q[4];
-    double tmp[4];
-    int maxpos=0;
-    tmp[0]=1.0 + R[0] + R[4] + R[8];
-    tmp[1]=1.0 + R[0] - R[4] - R[8];
-    tmp[2]=1.0 - R[0] + R[4] - R[8];
-    tmp[3]=1.0 - R[0] - R[4] + R[8];
-    double mag=-1.0;
-    for(int i=0; i<4; i++){
-        if(tmp[i]>mag){
-            mag=tmp[i];
-            maxpos=i;
-        }
-    }
-    
-    if(maxpos==0){
-        q[0]=sqrt(tmp[0])*0.5;
-        q[1]=(R[7] - R[5])/(4.0*q[0]);
-        q[2]=(R[2] - R[6])/(4.0*q[0]);
-        q[3]=(R[3] - R[1])/(4.0*q[0]);
-    }
-    else if(maxpos==1){
-        q[1]=sqrt(tmp[1])*0.5;
-        q[0]=(R[7] - R[5])/(4.0*q[1]);
-        q[2]=(R[3] + R[1])/(4.0*q[1]);
-        q[3]=(R[2] + R[6])/(4.0*q[1]);
-    }
-    else if(maxpos==2){
-        q[2]=sqrt(tmp[2])*0.5;
-        q[0]=(R[2] - R[6])/(4.0*q[2]);
-        q[1]=(R[3] + R[1])/(4.0*q[2]);
-        q[3]=(R[7] + R[5])/(4.0*q[2]);
-    }
-    else if(maxpos==3){
-        q[3]=sqrt(tmp[3])*0.5;
-        q[0]=(R[3] - R[1])/(4.0*q[3]);
-        q[1]=(R[2] + R[6])/(4.0*q[3]);
-        q[2]=(R[7] + R[5])/(4.0*q[3]);
-    }
-    else{
-    }
-    
-    // enforce unit length
-    mag=q[0]*q[0] + q[1]*q[1] + q[2]*q[2] + q[3]*q[3];
-    if(mag!=1.0)
-    {
-        mag=1.0/sqrt(mag);
-        q[0]*=mag; q[1]*=mag; q[2]*=mag; q[3]*=mag;
-     
-    }*/
     double q[4];
     q[0]=sqrt(1.0 + R[0] + R[4] + R[8])*0.5;
     q[1]=(R[7] - R[5])/(4.0*q[0]);
     q[2]=(R[2] - R[6])/(4.0*q[0]);
     q[3]=(R[3] - R[1])/(4.0*q[0]);
-
+    
     r[0]=q[0];
     r[1]=q[1];
     r[2]=q[2];
@@ -366,146 +300,266 @@ void quat2cammat(double*r,double*t,Mat_<double>&p)
     
 }
 
-void opencv_twoview_sba(const Mat_<double>&k,const Mat_<double>&p1,const Mat_<double>&p2,const Mat_<double>&points,const Mat_<double>&points1,const Mat_<double>&points2,Mat_<double>&new_p1,Mat_<double>&new_p2,Mat_<double>&new_points,int nconstpts3D,int nconstframes,int maxiter,int verbose)
+
+SFM::SFM(const Mat &cameraMatrix,const vector<vector<Point2d> > &keypoints,const vector<vector<Mat> > &fmatrices,const vector<vector<vector<DMatch>> > &matches,int nframes):cameraMatrix(cameraMatrix),keypoints(keypoints),fmatrices(fmatrices),matches(matches),nframes(nframes),pmatrices(nframes),cloud(cameraMatrix,pmatrices,nframes)
 {
-    struct globs_ globs;
-    double ical[5]={k(0,0),k(0,2),k(1,2),k(1,1)/k(0,0),0};//f cx cy ar s;
-    double opts[SBA_OPTSSZ], info[SBA_INFOSZ];
-    int cnp=6;  //相机矩阵用3位表示旋转，3位表示位移
-    int pnp=3;  //三维点的坐标数
-    int mnp=2;  //二维点的坐标数
-    int numpts3D=points.cols;   //三维点的数量
-    int nframes=2;  //相机的数量
-    int numprojs=numpts3D*nframes; //在所有相机下，三维点共计有多少个二维投影
-    //vmask[i,j]表示第i个点在第j个镜头下是否可见，此处填充为全1，因为点在两个镜头下均可见
-    char *vmask=new char[numpts3D*nframes];
-    std::fill_n(vmask, numpts3D*nframes, 1);
-    //将相机矩阵p1和p2转换为四元数表示
-    //r1和r2是四元数，表示旋转矩阵
-    //t1和t2是位移向量
-    double r1[4],t1[3],r2[4],t2[3];
-    cammat2quat(p1,r1,t1);
-    cammat2quat(p2,r2,t2);
-    //motstruct是待优化的相机矩阵和三维点，其结构为(r1,t1,r2,t2,X[1],X[2]...X[n])
-    int motstruct_size=nframes*cnp+numpts3D*pnp;
-    double *motstruct=new double[motstruct_size]();
-    //拷贝相机矩阵
-    std::copy(r1+1, r1+4, motstruct);
-    std::copy(t1, t1+3, motstruct+3);
-    std::copy(r2+1, r2+4, motstruct+6);
-    std::copy(t2, t2+3, motstruct+9);
-    //拷贝三维点
-    int pstart=nframes*cnp; //三维点的开始位置
-    for(int i=0;i<numpts3D;i++)
-    {
-        motstruct[pstart+i*pnp]=points(0,i);
-        motstruct[pstart+i*pnp+1]=points(1,i);
-        motstruct[pstart+i*pnp+2]=points(2,i);
-    }
-    //如果要对相机旋转矩阵和三维点的位置同时优化，必须将相机矩阵的旋转初始化为0，即四元数表示的(1,0,0,0)
-    //并用globs.rot0params保存了相机旋转矩阵
-    //若只对三维点的位置进行优化，此步不做
-    for(int i=0; i<nframes; ++i){
-        int j=(i+1)*cnp; // 跳过位移向量
-        motstruct[j-4]=motstruct[j-5]=motstruct[j-6]=0.0; // 设置为(1,0,0,0)
-    }
-    //imgpts保存三维点在每个相机下的投影，即二维点
-    //imgpts[i,j]是第i个三维点在第j个相机下的投影
-    double *imgpts=new double[numprojs*mnp]();
-    for(int i=0;i<numpts3D;i++)
-    {
-        imgpts[i*nframes*mnp]=points1(0,i);
-        imgpts[i*nframes*mnp+1]=points1(1,i);
-        imgpts[i*nframes*mnp+2]=points2(0,i);
-        imgpts[i*nframes*mnp+3]=points2(1,i);
-    }
-    double *covimgpts=NULL;
-    //设置globs
-    globs.cnp=cnp;
-    globs.pnp=pnp;
-    globs.mnp=mnp;
-    globs.rot0params=new double[FULLQUATSZ*nframes]();
-    std::copy(r1,r1+4, globs.rot0params);
-    std::copy(r2,r2+4, globs.rot0params+4);
-    globs.intrcalib=ical;
-    globs.ptparams=NULL;
-    globs.camparams=NULL;
     
-    //设置优化选项
-    opts[0]=SBA_INIT_MU; opts[1]=SBA_STOP_THRESH; opts[2]=SBA_STOP_THRESH;
-    opts[3]=SBA_STOP_THRESH;
-    //opts[3]=0.05*numprojs; // uncomment to force termination if the average reprojection error drops below 0.05
-    opts[4]=0.0;
-    //opts[4]=1E-05; // uncomment to force termination if the relative reduction in the RMS reprojection error drops below 1E-05
-     
-    /*opts[0]=1E-8; opts[1]=1E-15; opts[2]=1E-15;
-    opts[3]=1E-15;
-    //opts[3]=0.05*numprojs; // uncomment to force termination if the average reprojection error drops below 0.05
-    opts[4]=0.0;*/
-    //优化
-    int n=sba_motstr_levmar_x(numpts3D, nconstpts3D, nframes, nconstframes, vmask, motstruct, cnp, pnp, imgpts, covimgpts, mnp,img_projsRTS_x,img_projsRTS_jac_x,(void*)(&globs),maxiter, verbose, opts, info);
-    if(n!=SBA_ERROR)
+}
+void SFM::getMatchPoints(const vector<Point2d>& keypoints1,const vector<Point2d>& keypoints2,const vector<DMatch>&matches,Mat_<double>&points1,Mat_<double>&points2)
+{
+    int col=(int)matches.size();
+    points1.create(3, col);
+    points2.create(3, col);
+    for(vector<DMatch>::size_type i=0;i<matches.size();i++)
+    {
+        DMatch match=matches[i];
+        Point2d point1=keypoints1[match.queryIdx];
+        Point2d point2=keypoints2[match.trainIdx];
+        points1(0,(int)i)=point1.x;
+        points1(1,(int)i)=point1.y;
+        points1(2,(int)i)=1;
+        points2(0,(int)i)=point2.x;
+        points2(1,(int)i)=point2.y;
+        points2(2,(int)i)=1;
+    }
+}
+void SFM::computeP(const Mat&E,vector<Mat>&pVector)
+{
+    SVD svd(E);
+    Mat u=svd.u;
+    Mat vt=svd.vt;
+    if(determinant(u*vt)<0)
+    {
+        vt=-vt;
+    }
+    //Matx33d s(1,0,0,0,1,0,0,0,0);
+    //Mat e=u*Mat(s)*vt;
+    Matx33d w(0,-1,0,1,0,0,0,0,1);
+    Mat_<double> R1=u*Mat(w)*vt;
+    Mat_<double> R2=u*Mat(w).t()*vt;
+    Mat_<double> t1=u.col(2);
+    Mat_<double> t2=-t1;
+    Matx34d P1(R1(0,0),R1(0,1),R1(0,2),t1(0),
+               R1(1,0),R1(1,1),R1(1,2),t1(1),
+               R1(2,0),R1(2,1),R1(2,2),t1(2));
+    Matx34d P2(R2(0,0),R2(0,1),R2(0,2),t1(0),
+               R2(1,0),R2(1,1),R2(1,2),t1(1),
+               R2(2,0),R2(2,1),R2(2,2),t1(2));
+    Matx34d P3(R1(0,0),R1(0,1),R1(0,2),t2(0),
+               R1(1,0),R1(1,1),R1(1,2),t2(1),
+               R1(2,0),R1(2,1),R1(2,2),t2(2));
+    Matx34d P4(R2(0,0),R2(0,1),R2(0,2),t2(0),
+               R2(1,0),R2(1,1),R2(1,2),t2(1),
+               R2(2,0),R2(2,1),R2(2,2),t2(2));
+    pVector.push_back(Mat(P1));
+    pVector.push_back(Mat(P2));
+    pVector.push_back(Mat(P3));
+    pVector.push_back(Mat(P4));
+    
+    /* cout<<P1<<endl;
+     cout<<P2<<endl;
+     cout<<P3<<endl;
+     cout<<P4<<endl;*/
+    
+}
+void SFM::triangulatePoint(const Mat_<double>&point1,const Mat_<double>&point2,const Mat_<double>&P1,const Mat_<double>&P2,Mat_<double>& point)
+{
+    Mat_<double> M=Mat::zeros(6, 6, CV_64F);
+    P1.copyTo(M(Rect(0,0,4,3)));//Rect(x,y,width,height),矩阵的row对应y和height，col对应x和width
+    P2.copyTo(M(Rect(0,3,4,3)));
+    
+    M(0,4)=-point1(0);
+    M(1,4)=-point1(1);
+    M(2,4)=-point1(2);
+    M(3,5)=-point2(0);
+    M(4,5)=-point2(1);
+    M(5,5)=-point2(2);
+    Mat_<double> X;
+    SVD::solveZ(M, X);
+    X=X/X(3);
+    point(0,0)=X(0);
+    point(1,0)=X(1);
+    point(2,0)=X(2);
+    point(3,0)=1;
+}
+void SFM::triangulate(const Mat_<double>&points1,const Mat_<double>&points2,const Mat&P1,const Mat&P2,Mat_<double>&points)
+{
+ 
+    points.create(4, points1.cols);
+    for(int i=0;i<points1.cols;i++)
     {
         
-        /* combine the local rotation estimates with the initial ones */
-        for(int i=0; i<nframes; ++i){
-            double *v, qs[FULLQUATSZ], *q0, prd[FULLQUATSZ];
-            
-            /* retrieve the vector part */
-            v=motstruct + (i+1)*cnp - 6; // note the +1, we access the motion parameters from the right, assuming 3 for translation!
-            _MK_QUAT_FRM_VEC(qs, v);
-            
-            q0=globs.rot0params+i*FULLQUATSZ;
-            quatMultFast(qs, q0, prd); // prd=qs*q0
-            
-            /* copy back vector part making sure that the scalar part is non-negative */
-            if(prd[0]>=0.0){
-                v[0]=prd[1];
-                v[1]=prd[2];
-                v[2]=prd[3];
-            }
-            else{ // negate since two quaternions q and -q represent the same rotation
-                v[0]=-prd[1];
-                v[1]=-prd[2];
-                v[2]=-prd[3];
-            }
-        }
-        //printSBAData(stdout, motstruct, cnp, pnp, mnp, vec2quat, cnp+1, nframes, numpts3D, imgpts, numprojs, vmask);
-
-        new_p1.create(3, 4);
-        new_p2.create(3,4);
-        new_points.create(4,numpts3D);
-        std::copy(motstruct, motstruct+3, r1);
-        std::copy(motstruct+3, motstruct+6, t1);
-        std::copy(motstruct+6, motstruct+9, r2);
-        std::copy(motstruct+9, motstruct+12, t2);
-        quat2cammat(r1, t1, new_p1);
-        quat2cammat(r2, t2, new_p2);
-        int i=0;
-        for (double *p=motstruct+12; p!=motstruct+motstruct_size; p+=3) {
-            new_points(0,i)=*p;
-            new_points(1,i)=*(p+1);
-            new_points(2,i)=*(p+2);
-            new_points(3,i)=1;
-            i++;
-        }
-               //std::cout<<new_points<<std::endl;
+        Mat_<double> point=points.col(i);
+        
+        triangulatePoint(points1.col(i), points2.col(i), P1, P2,point);
+        
     }
-
 }
-void nviewSba(const Mat_<double>&cameraMatrix, vector<Mat_<double> >& pmatrices,vector<CloudPoint> &cloudPoints,int nframes,int nconstpts3D,int nconstframes,int maxiter,int verbose)
+Mat_<double> SFM::trianglulateAndFindCameraMatrix(const Mat_<double>&points1,const Mat_<double>&points2,const Mat&P1,const Mat&F,Mat&P2)
+{
+    
+    Mat_<double> E=cameraMatrix.t()*F*cameraMatrix;
+  
+    vector<Mat> P2Vector;
+    computeP(E,P2Vector);
+    // vector<vector<Point3d> > pointsVector;
+    int maxCount=0;
+    vector<Mat>::size_type bestIndex=0;
+    vector<Mat_<double> > points3dVector(4);
+    for(vector<Mat>::size_type i=0;i<P2Vector.size();i++)
+    {
+        Mat p2=P2Vector[i];
+ 
+        triangulate(cameraMatrix.inv()*points1, cameraMatrix.inv()*points2, P1,p2, points3dVector[i]);
+
+        Mat P4x4=Mat::eye(4, 4, CV_64F);
+        Mat P3x4=P4x4(Rect(0,0,4,3));
+        p2.copyTo(P3x4);
+        Mat_<double> points3d_projected=P3x4*points3dVector[i];
+        int count=0;
+        for(int colIdx=0;colIdx<points3d_projected.cols;colIdx++)
+        {
+            Mat_<double> point3d_projected=points3d_projected.col(colIdx);
+            if(points3d_projected(2)>0)
+            {
+                count++;
+            }
+        }
+        if(count>maxCount)
+        {
+            maxCount=count;
+            bestIndex=i;
+        }
+    }
+    P2Vector[bestIndex].copyTo(P2);
+    return points3dVector[bestIndex];
+}
+void SFM::initialReconstruct()
+{
+    Mat_<double>points0,points1;
+    getMatchPoints(keypoints[0],keypoints[1],matches[0][1] , points0, points1);
+    cout<<"对图像0和图像1的匹配点进行三角化"<<endl;
+    Mat P1=Mat(Matx34d(1,0,0,0,0,1,0,0,0,0,1,0));
+    Mat_<double> P2;
+    Mat_<double> points=trianglulateAndFindCameraMatrix(points0, points1, P1, fmatrices[0][1], P2);
+    for (int i=0; i<points.cols; i++) {
+        double x=points(0,i);
+        double y=points(1,i);
+        double z=points(2,i);
+        CloudPoint cp(x,y,z,nframes,keypoints);
+        cp.setPointIndex(0, matches[0][1][i].queryIdx);
+        cp.setPointIndex(1, matches[0][1][i].trainIdx);
+        cloud.addPoint(cp);
+    }
+    pmatrices[0]=P1;
+    pmatrices[1]=P2;
+    cloud.reprojectError(2);
+    cout<<"三角化完成，开始bundle adjustment"<<endl;
+    nviewSba(2);
+    cloud.reprojectError(2);
+}
+Mat_<double> SFM:: findPmatrixByKnownPoints(const vector<DMatch>&match,bool* known,const Mat_<double>&points,int frame)
+{
+    //根据已知的三位点确定投影矩阵
+    vector<Point3f> objectPoints;
+    vector<Point2f> imagePoints;
+    Mat_<double> rvec;
+    Mat_<double> tvec;
+    for(int i=0;i<match.size();i++)
+    {
+        if(known[i])
+        {
+            Point3f p3d(points(0,i),points(1,i),points(2,i));
+            objectPoints.push_back(p3d);
+            int index=match[i].trainIdx;
+            Point2f p2d=keypoints[frame][index];
+            imagePoints.push_back(p2d);
+        }
+    }
+    solvePnPRansac(objectPoints, imagePoints, cameraMatrix, noArray(), rvec, tvec);
+    Mat_<double> rmat;
+    Rodrigues(rvec, rmat);
+    Mat_<double> p;
+    p.create(3, 4);
+    rmat.copyTo(p(Rect(0,0,3,3)));
+    p(0,3)=tvec(0);
+    p(1,3)=tvec(1);
+    p(2,3)=tvec(2);
+    return p;
+}
+void SFM::reconstructByKnownPoints(int frame,int prevFrame,const vector<DMatch>&match,bool *known,Mat_<double> &points)
+{
+
+    Mat_<double> invCameraMatrix=cameraMatrix.inv();
+    for (int i=0; i<match.size(); i++) {
+        if(!known[i])
+        {
+            int a=match[i].queryIdx;
+            int b=match[i].trainIdx;
+            Mat_<double> point1(3,1);
+            Mat_<double> point2(3,1);
+            point1(0)=keypoints[prevFrame][a].x;
+            point1(1)=keypoints[prevFrame][a].y;
+            point1(2)=1;
+            point2(0)=keypoints[frame][a].x;
+            point2(1)=keypoints[frame][b].y;
+            point2(2)=1;
+            point1=invCameraMatrix*point1;
+            point2=invCameraMatrix*point2;
+            Mat_<double> point(4,1);
+            triangulatePoint(point1,point2,pmatrices[prevFrame],pmatrices[frame],point);
+            CloudPoint cp(point(0),point(1),point(2),nframes,keypoints);
+            cp.setPointIndex(prevFrame, a);
+            cp.setPointIndex(frame, b);
+            cloud.addPoint(cp);
+        }
+    }
+    
+}
+
+void SFM::addView(int frame)
+{
+    int prevFrame=frame-1;
+    vector<DMatch> match=matches[prevFrame][frame];
+    bool *known=new bool[(int)match.size()]();
+    Mat_<double> points(4,(int)match.size()); //根据当前视图和前一视图重建的三维点
+    cloud.findKnownPoints(frame,prevFrame,match,known,points);
+    pmatrices[frame]=findPmatrixByKnownPoints(match,known,points,frame);
+    reconstructByKnownPoints(frame,prevFrame,match,known,points);
+    //reprojectError(cameraMatrix, cloudPoints, pmatrices, frame+1);
+    nviewSba(frame+1);
+    cloud.reprojectError(frame+1);
+    /*
+     Mat_<double> new_P1;
+     Mat_<double> new_P2;
+     Mat_<double> new_points;
+     opencv_twoview_sba(cameraMatrix,pmatrices[prevFrame],pmatrices[frame],points,points0,points1,new_P1,new_P2,new_points,250,10);
+     cout<<"重建误差为:"<<reprojectError(points0,cameraMatrix,new_P1,new_points)<<" "<<reprojectError(points1,cameraMatrix,new_P2,new_points)<<endl;
+     */
+    delete known;
+    
+}
+Cloud& SFM::getCloud() 
+{
+    return cloud;
+}
+void SFM::nviewSba(int frameNum,int nconstframes,int nconstpts3D,int maxiter,int verbose)
 {
     int cnp=6;  //相机矩阵用3位表示旋转，3位表示位移
     int pnp=3;  //三维点的坐标数
     int mnp=2;  //二维点的坐标数
-    double ical[5]={cameraMatrix(0,0),cameraMatrix(0,2),cameraMatrix(1,2),cameraMatrix(1,1)/cameraMatrix(0,0),0};//f cx cy ar s;
+    double f=cameraMatrix.at<double>(0,0);
+    double cx=cameraMatrix.at<double>(0,2);
+    double cy=cameraMatrix.at<double>(1,2);
+    double ar=cameraMatrix.at<double>(1,1)/cameraMatrix.at<double>(0,0);
+    double ical[5]={f,cx,cy,ar,0};//f cx cy ar s;
     double opts[SBA_OPTSSZ], info[SBA_INFOSZ];
     struct globs_ globs;
     //设置globs
     globs.cnp=cnp;
     globs.pnp=pnp;
     globs.mnp=mnp;
-    globs.rot0params=new double[FULLQUATSZ*nframes]();
+    globs.rot0params=new double[FULLQUATSZ*frameNum]();
     globs.intrcalib=ical;
     globs.ptparams=NULL;
     globs.camparams=NULL;
@@ -518,15 +572,15 @@ void nviewSba(const Mat_<double>&cameraMatrix, vector<Mat_<double> >& pmatrices,
     opts[4]=0.0;
     
     
-    int numpts3D=(int)cloudPoints.size();   //三维点的数量
+    int numpts3D=cloud.getPointSize();   //三维点的数量
     int numprojs=0; //在所有相机下，三维点共计有多少个二维投影
     //vmask[i,j]表示第i个点在第j个镜头下是否可见，此处填充为全1，因为点在两个镜头下均可见
-    char *vmask=new char[numpts3D*nframes]();
+    char *vmask=new char[numpts3D*frameNum]();
     for(int i=0;i<numpts3D;i++)
     {
-        CloudPoint cp=cloudPoints[i];
-        for (int j=0; j<nframes; j++) {
-            int index=i*nframes+j;
+        CloudPoint cp=cloud.getPoint(i);
+        for (int j=0; j<frameNum; j++) {
+            int index=i*frameNum+j;
             if(cp.getPointIndex(j)!=-1)
             {
                 vmask[index]=1;
@@ -535,9 +589,9 @@ void nviewSba(const Mat_<double>&cameraMatrix, vector<Mat_<double> >& pmatrices,
         }
     }
     //motstruct是待优化的相机矩阵和三维点，其结构为(r1,t1,r2,t2,X[1],X[2]...X[n])
-    int motstruct_size=nframes*cnp+numpts3D*pnp;
+    int motstruct_size=frameNum*cnp+numpts3D*pnp;
     double *motstruct=new double[motstruct_size]();
-    for(int i=0;i<nframes;i++)
+    for(int i=0;i<frameNum;i++)
     {
         Mat_<double> p=pmatrices[i];
         double r[4],t[3];
@@ -547,10 +601,10 @@ void nviewSba(const Mat_<double>&cameraMatrix, vector<Mat_<double> >& pmatrices,
         copy(r,r+4, globs.rot0params+i*FULLQUATSZ);
     }
     //拷贝三维点
-    int pstart=nframes*cnp; //三维点的开始位置
+    int pstart=frameNum*cnp; //三维点的开始位置
     for(int i=0;i<numpts3D;i++)
     {
-        CloudPoint cp=cloudPoints[i];
+        CloudPoint cp=cloud.getPoint(i);
         motstruct[pstart+i*pnp]=cp.x;
         motstruct[pstart+i*pnp+1]=cp.y;
         motstruct[pstart+i*pnp+2]=cp.z;
@@ -558,7 +612,7 @@ void nviewSba(const Mat_<double>&cameraMatrix, vector<Mat_<double> >& pmatrices,
     //如果要对相机旋转矩阵和三维点的位置同时优化，必须将相机矩阵的旋转初始化为0，即四元数表示的(1,0,0,0)
     //并用globs.rot0params保存了相机旋转矩阵
     //若只对三维点的位置进行优化，此步不做
-    for(int i=0; i<nframes; ++i){
+    for(int i=0; i<frameNum; ++i){
         int j=(i+1)*cnp; // 跳过位移向量
         motstruct[j-4]=motstruct[j-5]=motstruct[j-6]=0.0; // 设置为(1,0,0,0)
     }
@@ -566,8 +620,8 @@ void nviewSba(const Mat_<double>&cameraMatrix, vector<Mat_<double> >& pmatrices,
     double *imgpts=new double[numprojs*mnp]();
     for(int i=0,n=0;i<numpts3D;i++)
     {
-        CloudPoint cp=cloudPoints[i];
-        for (int j=0; j<nframes; j++) {
+        CloudPoint cp=cloud.getPoint(i);
+        for (int j=0; j<frameNum; j++) {
             Point2d point;
             if(cp.getPointInFrame(j, point))
             {
@@ -577,17 +631,17 @@ void nviewSba(const Mat_<double>&cameraMatrix, vector<Mat_<double> >& pmatrices,
             }
         }
     }
-
+    
     double *covimgpts=NULL;
     
-   
+    
     //优化
-    int n=sba_motstr_levmar_x(numpts3D, nconstpts3D, nframes, nconstframes, vmask, motstruct, cnp, pnp, imgpts, covimgpts, mnp,img_projsRTS_x,img_projsRTS_jac_x,(void*)(&globs),maxiter, verbose, opts, info);
+    int n=sba_motstr_levmar_x(numpts3D, nconstpts3D, frameNum, nconstframes, vmask, motstruct, cnp, pnp, imgpts, covimgpts, mnp,img_projsRTS_x,img_projsRTS_jac_x,(void*)(&globs),maxiter, verbose, opts, info);
     if(n!=SBA_ERROR)
     {
         
         /* combine the local rotation estimates with the initial ones */
-        for(int i=0; i<nframes; ++i){
+        for(int i=0; i<frameNum; ++i){
             double *v, qs[FULLQUATSZ], *q0, prd[FULLQUATSZ];
             
             /* retrieve the vector part */
@@ -609,8 +663,8 @@ void nviewSba(const Mat_<double>&cameraMatrix, vector<Mat_<double> >& pmatrices,
                 v[2]=-prd[3];
             }
         }
-        //printSBAData(stdout, motstruct, cnp, pnp, mnp, vec2quat, cnp+1, nframes, numpts3D, imgpts, numprojs, vmask);
-        for(int i=0;i<nframes;i++)
+        printSBAData(stdout, motstruct, cnp, pnp, mnp, vec2quat, cnp+1, frameNum, numpts3D, imgpts, numprojs, vmask);
+        for(int i=0;i<frameNum;i++)
         {
             Mat_<double> p(3,4);
             double r[3],t[3];
@@ -620,30 +674,10 @@ void nviewSba(const Mat_<double>&cameraMatrix, vector<Mat_<double> >& pmatrices,
             pmatrices[i]=p;
         }
         for (int i=0; i<numpts3D; i++) {
-            CloudPoint &cp=cloudPoints[i];
-            cp.x=motstruct[nframes*cnp+i*pnp];
-            cp.y=motstruct[nframes*cnp+i*pnp+1];
-            cp.z=motstruct[nframes*cnp+i*pnp+2];
+            CloudPoint& cp=cloud.getPoint(i);
+            cp.x=motstruct[frameNum*cnp+i*pnp];
+            cp.y=motstruct[frameNum*cnp+i*pnp+1];
+            cp.z=motstruct[frameNum*cnp+i*pnp+2];
         }
-        /*
-        new_p1.create(3, 4);
-        new_p2.create(3,4);
-        new_points.create(4,numpts3D);
-        std::copy(motstruct, motstruct+3, r1);
-        std::copy(motstruct+3, motstruct+6, t1);
-        std::copy(motstruct+6, motstruct+9, r2);
-        std::copy(motstruct+9, motstruct+12, t2);
-        quat2cammat(r1, t1, new_p1);
-        quat2cammat(r2, t2, new_p2);
-        int i=0;
-        for (double *p=motstruct+12; p!=motstruct+motstruct_size; p+=3) {
-            new_points(0,i)=*p;
-            new_points(1,i)=*(p+1);
-            new_points(2,i)=*(p+2);
-            new_points(3,i)=1;
-            i++;
-        }*/
-        //std::cout<<new_points<<std::endl;
     }
-
 }
