@@ -16,26 +16,6 @@
 using namespace std;
 using namespace cv;
 
-//加载视图
-//fileName：视图列表文件
-//images：加载的视图
-//images实际上是函数的返回值，为什么直接用return一个vector<Mat>类型的返回值呢？
-//因为这样会导致内存的拷贝，用引用就没有这个问题。
-//此处非常怀念Java，因为Java所有的对象都是引用，直接用return也不会有内存拷贝问题。
-//今后在程序中，我们约定：凡是函数参数中没有加const的“引用”或者“指针”均是作为函数
-//的返回值。加const的“引用”或者“指针”是为了在参数传递时不会出现内存的拷贝。
-void loadImages(const char* fileName,vector<Mat>&images)
-{
-    ifstream in(fileName);
-    string imageName;
-    in>>imageName;
-    while(in.good())
-    {
-        Mat im=imread(imageName);
-        images.push_back(im);
-        in>>imageName;
-    }
-}
 //计算视图特征
 //sift：视图特征的计算方法
 //images：视图列表
@@ -102,12 +82,11 @@ Mat computeFundamentalMatAndMatch(const vector<Point2d>& keypoints1,const vector
 //(3)计算视图特征
 //(4)计算基础矩阵和匹配
 //(5)用视图0和视图1进行初始重建
-//(6)增加视图，直到全部视图都计算完毕，重建结束
-//(7)显示重建结果，保存输出
+//(6)显示重建结果，保存输出
 int main(int argc, const char * argv[]) {
-    if(argc!=5)
+    if(argc!=6)
     {
-        cout<<"使用方法：程序名 相机参数文件路径 视图列表文件路径 输出点云文件路径 输出ply文件路径"<<endl;
+        cout<<"使用方法：程序名 相机参数文件路径 图片1路径 图片2路径 输出点云文件路径 输出ply文件路径"<<endl;
         exit(1);
     }
     //(1)加载相机矩阵
@@ -118,7 +97,10 @@ int main(int argc, const char * argv[]) {
     //(2)加载视图
     cout<<"(2)加载图像"<<endl;
     vector<Mat> images; //视图
-    loadImages(argv[2],images);
+    Mat im1=imread(argv[2]);
+    Mat im2=imread(argv[3]);
+    images.push_back(im1);
+    images.push_back(im2);
     int nframes=(int)images.size(); //视图数量
     //(3)计算视图特征
     cout<<"(3)计算视图特征"<<endl;
@@ -158,18 +140,11 @@ int main(int argc, const char * argv[]) {
     //(5)用视图0和视图1进行初始重建
     cout<<"(5)用视图0和视图1进行初始重建"<<endl;
     sfm.initialReconstruct();
-    //(6)增加视图，直到全部视图都计算完毕，重建结束
-    cout<<"(6)增加视图"<<endl;
-    for (int frame=2; frame<nframes; frame++) {
-       
-        cout<<"增加视图"<<frame<<endl;
-        sfm.addView(frame);
-    }
-    //(7)显示重建结果，保存输出
-    cout<<"(7)显示重建结果，保存输出"<<endl;
+    //(6)显示重建结果，保存输出
+    cout<<"(6)显示重建结果，保存输出"<<endl;
     Cloud& cloud=sfm.getCloud();
     cloud.plotCloudPoints(images);
-    cloud.saveCloudPoints(argv[3]);
-    cloud.saveCloudPointsToPly(images,argv[4]);
+    cloud.saveCloudPoints(argv[4]);
+    cloud.saveCloudPointsToPly(images,argv[5]);
     return 0;
 }

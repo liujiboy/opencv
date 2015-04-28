@@ -5,7 +5,7 @@
 	<key>IDESourceControlProjectFavoriteDictionaryKey</key>
 	<false/>
 	<key>IDESourceControlProjectIdentifier</key>
-	<string>65FDA1A7-0FD7-496E-95D3-67A0828873F8</string>
+	<string>DF0A49A6-F1C2-4638-9414-B63E9F63AB0A</string>
 	<key>IDESourceControlProjectName</key>
 	<string>project</string>
 	<key>IDESourceControlProjectOriginsDictionary</key>
@@ -14,7 +14,7 @@
 		<string>github.com:liujiboy/opencv.git</string>
 	</dict>
 	<key>IDESourceControlProjectPath</key>
-	<string>3d/sfm/sfm.xcodeproj/project.xcworkspace</string>
+	<string>3d/2ViewSfm/2ViewSfm.xcodeproj/project.xcworkspace</string>
 	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
 	<dict>
 		<key>06BCB8F0D154DC852F2A2C8EAC68972D299C86CD</key>

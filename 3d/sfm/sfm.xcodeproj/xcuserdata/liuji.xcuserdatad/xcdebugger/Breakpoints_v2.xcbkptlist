@@ -414,9 +414,7 @@
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "71"
-            endingLineNumber = "71"
-            landmarkName = "computeFundamentalMatAndMatch(const vector&lt;Point2d&gt;&amp; keypoints1,const vector&lt;Point2d&gt;&amp; keypoints2,const Mat&amp; descriptor1,const Mat&amp; descriptor2,vector&lt;DMatch&gt;&amp;betterMatch)"
-            landmarkType = "7">
+            endingLineNumber = "71">
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
@@ -472,6 +470,7 @@
                   continueAfterRunningActions = "No"
                   symbolName = "Cloud::Cloud(cv::Mat_&lt;double&gt; const&amp;, std::__1::vector&lt;cv::Mat_&lt;double&gt;, std::__1::allocator&lt;cv::Mat_&lt;double&gt; &gt; &gt; const&amp;, std::__1::vector&lt;cv::Mat, std::__1::allocator&lt;cv::Mat&gt; &gt; const&amp;, int)"
                   moduleName = "sfm"
+                  usesParentBreakpointCondition = "Yes"
                   urlString = "file:///Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../include/c++/v1/vector"
                   timestampString = "451240227.909895"
                   startingColumnNumber = "9223372036854775807"
@@ -486,6 +485,7 @@
                   continueAfterRunningActions = "No"
                   symbolName = "Cloud::Cloud(cv::Mat_&lt;double&gt; const&amp;, std::__1::vector&lt;cv::Mat_&lt;double&gt;, std::__1::allocator&lt;cv::Mat_&lt;double&gt; &gt; &gt; const&amp;, std::__1::vector&lt;cv::Mat, std::__1::allocator&lt;cv::Mat&gt; &gt; const&amp;, int)"
                   moduleName = "sfm"
+                  usesParentBreakpointCondition = "Yes"
                   urlString = "file:///Users/liuji/Projects/Computer_Vision/opencv/3d/sfm/sfm/Cloud.cpp"
                   timestampString = "451240227.910055"
                   startingColumnNumber = "9223372036854775807"
@@ -586,9 +586,7 @@
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "69"
-            endingLineNumber = "69"
-            landmarkName = "computeFundamentalMatAndMatch(const vector&lt;Point2d&gt;&amp; keypoints1,const vector&lt;Point2d&gt;&amp; keypoints2,const Mat&amp; descriptor1,const Mat&amp; descriptor2,vector&lt;DMatch&gt;&amp;betterMatch)"
-            landmarkType = "7">
+            endingLineNumber = "69">
          </BreakpointContent>
       </BreakpointProxy>
    </Breakpoints>
